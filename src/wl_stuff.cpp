@@ -1,13 +1,147 @@
+/*
+ * Copyright © 2011 Benjamin Franzke
+ *
+ * Permission to use, copy, modify, distribute, and sell this software and its
+ * documentation for any purpose is hereby granted without fee, provided that
+ * the above copyright notice appear in all copies and that both that copyright
+ * notice and this permission notice appear in supporting documentation, and
+ * that the name of the copyright holders not be used in advertising or
+ * publicity pertaining to distribution of the software without specific,
+ * written prior permission.  The copyright holders make no representations
+ * about the suitability of this software for any purpose.  It is provided "as
+ * is" without express or implied warranty.
+ *
+ * THE COPYRIGHT HOLDERS DISCLAIM ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
+ * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
+ * EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
+ * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+ * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
+ * OF THIS SOFTWARE.
+ */
+
 #include <assert.h>
 #include "wl_stuff.h"
 #include "lin_alg.h"
 
+struct display display = { 0 };
+struct window window = { 0 };
+	
 extern bool keys[];
 extern mat4 Projection;
 extern int running;
 extern float mouse_dx, mouse_dy;
 
+extern int init_gl(struct window *w);
+
+void (*my_glGenVertexArrays)(GLsizei, GLuint*) = NULL;
+void (*my_glBindVertexArray)(GLuint) = NULL;
+
 static uint32_t mouse_enter_serial;
+
+static int init_egl(struct display *display, int opaque) {
+
+	static const EGLint context_attribs[] = {
+		EGL_CONTEXT_CLIENT_VERSION, 2,
+		EGL_NONE
+	};
+
+	EGLint config_attribs[] = {
+		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+		EGL_DEPTH_SIZE, 16,
+		EGL_RED_SIZE, 8,
+		EGL_GREEN_SIZE, 8,
+		EGL_BLUE_SIZE, 8,
+		EGL_ALPHA_SIZE, 8,
+		EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+		EGL_NONE
+	};
+
+	EGLint major, minor, n;
+	EGLBoolean ret;
+
+	if (opaque)
+		config_attribs[11] = 0;
+
+	display->egl.dpy = eglGetDisplay((EGLNativeDisplayType)display->display);
+	assert(display->egl.dpy);
+
+	ret = eglInitialize(display->egl.dpy, &major, &minor);
+	assert(ret == EGL_TRUE);
+	ret = eglBindAPI(EGL_OPENGL_ES_API);
+	assert(ret == EGL_TRUE);
+
+	ret = eglChooseConfig(display->egl.dpy, config_attribs,
+			&display->egl.conf, 1, &n);
+
+	assert(ret && n == 1);
+
+	display->egl.ctx = eglCreateContext(display->egl.dpy,
+			display->egl.conf,
+			EGL_NO_CONTEXT, context_attribs);
+
+	assert(display->egl.ctx);
+
+	my_glGenVertexArrays = (decltype(&glGenVertexArraysOES))eglGetProcAddress("glGenVertexArrays");
+	assert(my_glGenVertexArrays);
+
+	my_glBindVertexArray = (decltype(&glBindVertexArrayOES))eglGetProcAddress("glBindVertexArray");
+	assert(my_glBindVertexArray);
+
+	return 1;
+}
+
+static void stop_egl(struct display *display) {
+	eglTerminate(display->egl.dpy);
+	eglReleaseThread();
+}
+
+int create_gl_window(int width, int height) {
+
+	window.display = &display;
+	display.window = &window;
+	window.window_size.width = width;
+	window.window_size.height = height;
+	window.opaque = 1;
+
+	display.display = wl_display_connect(NULL);
+	assert(display.display);
+
+	display.registry = wl_display_get_registry(display.display);
+	wl_registry_add_listener(display.registry,
+			&registry_listener, &display);
+
+	wl_display_dispatch(display.display);
+
+	init_egl(&display, window.opaque);
+	create_surface(&window);
+
+	if (!init_gl(&window)) return 0;
+
+	display.cursor_surface = wl_compositor_create_surface(display.compositor);
+	return 1;
+
+}
+
+void destroy_gl_window() {
+	destroy_surface(&window);
+	stop_egl(&display);
+
+	wl_surface_destroy(display.cursor_surface);
+	if (display.cursor_theme)
+		wl_cursor_theme_destroy(display.cursor_theme);
+
+	if (display.shell)
+		wl_shell_destroy(display.shell);
+
+	if (display.compositor)
+		wl_compositor_destroy(display.compositor);
+
+	wl_registry_destroy(display.registry);
+	wl_display_flush(display.display);
+	wl_display_disconnect(display.display);
+
+}
 
 extern void redraw(void *data, struct wl_callback *callback, uint32_t time);
 
@@ -22,8 +156,9 @@ static void handle_configure(void *data, struct wl_shell_surface *shell_surface,
 		wl_egl_window_resize(window->native, width, height, 0, 0);
 		Projection = mat4::proj_persp(M_PI/6, ((float)width/(float)height), 4.0, 1000.0);
 		glViewport(0, 0, width, height);
-	}
 
+	}
+	
 	window->geometry.width = width;
 	window->geometry.height = height;
 
@@ -39,7 +174,7 @@ static const struct wl_shell_surface_listener shell_surface_listener = {
 	handle_popup_done
 };
 
-static void configure_callback(void *data, struct wl_callback *callback, uint32_t  time) {
+static void configure_callback(void *data, struct wl_callback *callback, uint32_t time) {
 	struct window *window = (struct window*)data;
 	wl_callback_destroy(callback);
 	window->configured = 1;
@@ -254,7 +389,7 @@ static void
 registry_handle_global(void *data, struct wl_registry *registry,
 		uint32_t name, const char *interface, uint32_t version) {
 
-	struct display *d = (display*)data;
+	struct display *d = (struct display*)data;
 
 	if (strcmp(interface, "wl_compositor") == 0) {
 		d->compositor = (struct wl_compositor*)wl_registry_bind(registry, name, (const wl_interface*)&wl_compositor_interface, 1);

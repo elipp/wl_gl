@@ -1,12 +1,21 @@
 #!/bin/bash
-CAR_DIR=/home/elias/programming/c_c++/car_win32/car
-LIBS="-lwayland-egl -lwayland-server -lwayland-cursor -lwayland-client -lEGL -lGLESv2"
+
+set -e
+
+CAR_DIR=/home/elias/prog/kar
+LIBS="-lwayland-egl -lwayland-server -lwayland-cursor -lwayland-client -lEGL -lGLESv2 -ljpeg -lrt -lpng"
+INCLUDE="-I$CAR_DIR/include -Iinclude"
+SOURCES="$(find src -type f)"
+
+mkdir -p objs
+mkdir -p objs/lzma
 
 #g++ -c -Wall -I$CAR_DIR/include $CAR_DIR/src/lin_alg.cpp -o objs/lin_alg.o
-#g++ -c -Wall -I$CAR_DIR/include $CAR_DIR/src/lzma/* -o objs/lzma.o
-#for lzmasrcfile in $CAR_DIR/src/lzma/*.c; do
+
+#for lzmasrcfile in $CAR_DIR/src/lzma/*.cpp; do
 #	g++ -c -Wall -I$CAR_DIR/include $lzmasrcfile -o objs/lzma/"$(basename $lzmasrcfile)".o
 #done
-# ld -r objs/lzma/*.o -o objs/lzma.o
 
-g++ -std=c++11 -fpermissive -Wall $LIBS objs/lzma.o objs/lin_alg.o -I$CAR_DIR/include simple-egl.c -o wl 
+#ld -r objs/lzma/*.o -o objs/lzma.o
+
+g++ -std=c++11 -g -Wall $LIBS objs/lzma.o objs/lin_alg.o $INCLUDE $SOURCES -o kar
