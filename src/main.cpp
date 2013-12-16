@@ -231,6 +231,7 @@ void redraw(void *data, struct wl_callback *callback, uint32_t time) {
 	glClearColor(0.0, 0.0, 0.0, 0.5);
 
 	terrain_mesh->render();
+	car_mesh->render();
 
 	/*
 	if (window->opaque || window->fullscreen) {
