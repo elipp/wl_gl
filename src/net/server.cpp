@@ -72,8 +72,8 @@ void Server::send_packet_of_death() {
 	static const PTCLHEADERDATA PACKET_OF_DEATH_HEADER = { PROTOCOL_ID, SEQN_ASSIGNED_ELSEWHERE, ID_SERVER, S_PACKET_OF_DEATH };
 	memcpy(dbuffer, &PACKET_OF_DEATH_HEADER, sizeof(PACKET_OF_DEATH_HEADER)); 
 
-	struct sockaddr_in serv_addr = Server::socket.get_own_addr();
-	Server::socket.send_data(&serv_addr, dbuffer, PTCL_HEADER_LENGTH);
+	struct sockaddr_in self_addr = Server::socket.get_own_addr();
+	Server::socket.send_data(&self_addr, dbuffer, PTCL_HEADER_LENGTH);
 
 }
 
@@ -81,12 +81,6 @@ void Server::shutdown() {
 	// post quit messages to all clients
 	running = 0;
 	SERVER_PRINT("Server: joining worker threads.\n");
-
-	#ifdef _WIN32
-	if (clients.size() <= 0) {
-		Socket::deinitialize();	// on windows, this quickly breaks up the listen loop, no need to send S_SHUTDOWN either
-	}
-	#endif
 
 	Server::send_packet_of_death();
 
