@@ -46,3 +46,12 @@ std::string get_login_username() {
 	return std::string(name_buf);
 
 }
+
+size_t cpp_getfilesize(std::ifstream& in) {
+	in.seekg (0, std::ios::end);
+	long length = in.tellg();
+	in.seekg(0, std::ios::beg);
+
+	return length;
+}
+

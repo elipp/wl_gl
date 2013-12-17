@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
 	fprintf(stderr, "timestamp: %s, login username: %s\n", timestamp.c_str(), name.c_str()); */
 	
 	signal(SIGINT, sigint_handler);
-	if(!Server::init((unsigned short)50000)) { return EXIT_FAILURE; }        // start server thread
+	if(!Server::init((unsigned short)50000)) { return 1; }        // start server thread
 
 	while (Server::is_running()) SLEEP_MS(2500);
 

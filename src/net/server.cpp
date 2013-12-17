@@ -56,11 +56,12 @@ int Server::init(unsigned short port) {
 	socket = Socket(port, SOCK_DGRAM, true); // blocking udp socket
 	if (socket.is_bad()) { SERVER_PRINT( "Server::init, socket init error.\n"); return 0; }
 
+	Server::running = 1;
+
 	Listener.start();
 	PingManager.start();
 	GameStateManager.start();
 
-	running = 1;
 	SERVER_PRINT("\nServer: init successful. Bound to port %u.\n", get_port());
 	return 1;
 }

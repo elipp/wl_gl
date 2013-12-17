@@ -68,29 +68,33 @@ static int loadlzmabobj(const std::string &filename, GLuint *VBOid, int *num_tri
 
 void mesh_t::render() {
 	
-	mat4 ModelView = mat4::translate(this->position);
+/*	mat4 ModelView = mat4::translate(this->position);
 	ModelView *= this->orientation.toRotationMatrix();
-	ModelView *= View;
+	ModelView *= View; */
 
-	glUniformMatrix4fv(ModelView_u, 1, GL_FALSE,
-			(const GLfloat *)ModelView.rawData());
-	glUniformMatrix4fv(Projection_u, 1, GL_FALSE,
+	glUseProgram(shader->program_id);
+
+	glUniformMatrix4fv(shader->ModelView_uniform_location, 1, GL_FALSE,
+			(const GLfloat *)this->modelview.rawData());
+	glUniformMatrix4fv(shader->Projection_uniform_location, 1, GL_FALSE,
 			(const GLfloat*)Projection.rawData());
 
 
-	glUseProgram(this->shaderId);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, this->texId);
-	glUniform1i(sampler0_u, 0);
+	glUniform1i(shader->sampler0_uniform_location, 0);
 
 	my_glBindVertexArray(this->VAOid);
 	glDrawArrays(GL_TRIANGLES, 0, this->num_triangles*3);
+
+	glUseProgram(0);
+	my_glBindVertexArray(0);
 	
 }
 
-mesh_t::mesh_t(std::string filename, GLuint shader_id, GLuint texture_id)
-	: shaderId(shader_id), texId(texture_id) {
+mesh_t::mesh_t(std::string filename, ShaderProgram *shader_program, GLuint texture_id)
+	: shader(shader_program), texId(texture_id) {
 
 	this->bad = true;
 

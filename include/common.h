@@ -6,6 +6,7 @@
 #include <string>
 #include <cstdio>
 #include <sstream>
+#include <fstream>
 
 #define MAX(x, y) std::max(x, y)
 #define MIN(x, y) std::min(x, y)
@@ -31,11 +32,8 @@
 #define PI_PER_180 (M_PI/180.0)
 #define D180_PER_PI (180.0/M_PI);
 
-extern std::string get_timestamp();
-
 inline float RADIANS(float angle_in_degrees) { return angle_in_degrees*PI_PER_180; }
 inline float DEGREES(float angle_in_radians) { return angle_in_radians*D180_PER_PI; }
-
 
 #ifdef __linux__
 #include <unistd.h>
@@ -45,5 +43,7 @@ inline float DEGREES(float angle_in_radians) { return angle_in_radians*D180_PER_
 std::string get_timestamp();
 std::vector<std::string> split(const std::string &arg, char delim);
 std::string get_login_username();
+
+size_t cpp_getfilesize(std::ifstream& in);
 
 #endif

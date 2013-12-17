@@ -4,7 +4,7 @@
 #include "net/client_funcs.h"
 #include "lin_alg.h"
 #include "car.h"
-//#include "texture.h"
+#include "keyboard.h"
 
 #include <string>
 
@@ -43,8 +43,8 @@ unsigned short LocalClient::port = 50001;
 
 static Car local_car;
 
-static int net_bytes_out = 0;
-static int net_bytes_in = 0;
+//static int net_bytes_out = 0;
+//static int net_bytes_in = 0;
 
 int LocalClient::connect(const std::string &ip_port_string) {
 	
@@ -127,7 +127,7 @@ void LocalClient::KeystateTaskThread::task() {
 	keystate_timer.begin();
 	while (LocalClient::KeystateTaskThread::is_running() && LocalClient::is_connected()) {
 		if (keystate_timer.get_ms() > KEYSTATE_GRANULARITY_MS) {
-			//update_keystate(keys.pressed);
+			update_keystate(keys);
 			post_keystate();
 			keystate_timer.begin();
 			long wait_ms = KEYSTATE_GRANULARITY_MS - keystate_timer.get_ms();
@@ -152,7 +152,7 @@ int LocalClient::handshake() {
 
 			
 #define RETRY_GRANULARITY_MS 1000
-#define NUM_RETRIES 5
+#define NUM_RETRIES 3
 		
 	PRINT( "LocalClient::sending handshake to remote.\n");
 	
@@ -160,7 +160,7 @@ int LocalClient::handshake() {
 	// the WS2 select() call reports "data available" when sending to 127.0.0.1, despite different port.
 
 	int received_data = 0;
-	for (int i = 0; i < NUM_RETRIES; ++i) {
+	for (int i = 0; i < NUM_RETRIES; ++i && shutdown_requested) {
 		int select_r = socket.wait_for_incoming_data(RETRY_GRANULARITY_MS);
 		if (select_r > 0) { 
 			// could be wrong data. should check the data we received and retry if it wasn't the correct stuff
@@ -377,7 +377,7 @@ void LocalClient::ListenTaskThread::update_positions() {
 	static const size_t serial_data_size = sizeof(Car().data_serial);
 	static const size_t PTCL_POS_DATA_SIZE = sizeof(unsigned short) + serial_data_size;
 
-	size_t total_size = PTCL_HEADER_LENGTH;
+	//size_t total_size = PTCL_HEADER_LENGTH;
 
 	for (unsigned i = 0; i < num_clients; ++i) {
 		unsigned short id;
@@ -395,7 +395,7 @@ void LocalClient::ListenTaskThread::update_positions() {
 	LocalClient::posupd_timer.begin();	
 }
 
-inline void interp(Car &car, float DT_COEFF) {
+static inline void interp(Car &car, float DT_COEFF) {
 		float turn_coeff = turn_velocity_coeff(car.state.velocity);
 		car.state.direction += (car.state.velocity > 0 ? turning_modifier_forward : turning_modifier_reverse)
 								*car.state.front_wheel_angle*car.state.velocity*turn_coeff*DT_COEFF;
@@ -454,10 +454,10 @@ void LocalClient::KeystateTaskThread::post_keystate() {
 void LocalClient::KeystateTaskThread::update_keystate(const bool *keys) {
 	client.keystate = 0x0;
 
-/*	if (keys[VK_UP]) { client.keystate |= C_KEYSTATE_UP; }
-	if (keys[VK_DOWN]) { client.keystate |= C_KEYSTATE_DOWN; }
-	if (keys[VK_LEFT]) { client.keystate |= C_KEYSTATE_LEFT; }
-	if (keys[VK_RIGHT]) { client.keystate |= C_KEYSTATE_RIGHT; }*/
+	if (keys[KAR_KB_UP]) { client.keystate |= C_KEYSTATE_UP; }
+	if (keys[KAR_KB_DOWN]) { client.keystate |= C_KEYSTATE_DOWN; }
+	if (keys[KAR_KB_LEFT]) { client.keystate |= C_KEYSTATE_LEFT; }
+	if (keys[KAR_KB_RIGHT]) { client.keystate |= C_KEYSTATE_RIGHT; }
 }
 
 void LocalClient::ListenTaskThread::post_quit_message() {

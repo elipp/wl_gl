@@ -2,14 +2,13 @@
 
 set -e
 
-LIBDIR="-L/usr/local/lib"
+CC="g++ -std=c++11 -Wall"
 LIBS="-lwayland-egl -lwayland-server -lwayland-cursor -lwayland-client -lEGL -lGLESv2 -ljpeg -lrt -lpng -llinalg -lpthread"
 INCLUDE="-I/usr/local/include -Iinclude"
 SOURCES="src/main.cpp src/wl_stuff.cpp src/texturewl.cpp src/timer.cpp src/mesh.cpp"
+NET_SOURCES="$(find src/net -type f | grep -v 'dedicated')"
 
 install -d objs/lzma
-
-#g++ -c -Wall -I$CAR_DIR/include $CAR_DIR/src/lin_alg.cpp -o objs/lin_alg.o
 
 if [ ! -f objs/lzma.o ]; then
 	for lzmasrcfile in $CAR_DIR/src/lzma/*.cpp; do
@@ -18,13 +17,18 @@ if [ ! -f objs/lzma.o ]; then
 	ld -r objs/lzma/*.o -o objs/lzma.o
 fi
 
-#g++ -std=c++11 -g -Wall objs/lzma.o $INCLUDE $SOURCES -o kar $LIBS $LIBDIR 
+CLIENT_SOURCES="src/wl_stuff.cpp src/texturewl.cpp src/timer.cpp src/mesh.cpp src/shader.cpp src/common.cpp src/keyboard.cpp $NET_SOURCES src/main.cpp"
+DEDICATED_SERVER_SOURCES="src/common.cpp src/timer.cpp src/keyboard.cpp $NET_SOURCES src/net/dedicated_server.cpp"
+DEDICATED_CLIENT_SOURCES="src/common.cpp src/timer.cpp src/keyboard.cpp $NET_SOURCES src/net/dedicated_client.cpp"
 
-g++ -std=c++11 -g -Wall $INCLUDE \
-src/net/socket.cpp src/common.cpp src/net/taskthread.cpp src/timer.cpp src/net/server.cpp \
-src/net/protocol.cpp src/net/dedicated_server.cpp -lpthread -o dedicated_server 
+echo "Building main client (kar)..."
+$CC objs/lzma.o $INCLUDE $CLIENT_SOURCES -o kar $LIBS 
+echo "done."
 
-g++ -std=c++11 -g -Wall $INCLUDE \
-src/net/socket.cpp src/common.cpp src/net/taskthread.cpp src/timer.cpp src/net/server.cpp \
-src/net/protocol.cpp src/net/client.cpp src/net/client_funcs.cpp src/net/dedicated_client.cpp \
--lpthread -llinalg -o dedicated_client
+echo "Building dedicated server..."
+$CC $INCLUDE $DEDICATED_SERVER_SOURCES -o dedicated_server -lpthread -llinalg
+echo "done."
+
+#echo "Building dedicated client..."
+#$CC $INCLUDE $DEDICATED_CLIENT_SOURCES -o dedicated_client -lpthread -llinalg 
+#echo "done."
