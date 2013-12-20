@@ -11,8 +11,8 @@ NET_SOURCES="$(find src/net -type f | grep -v 'dedicated')"
 install -d objs/lzma
 
 if [ ! -f objs/lzma.o ]; then
-	for lzmasrcfile in $CAR_DIR/src/lzma/*.cpp; do
-		g++ -c -Wall -I$CAR_DIR/include $lzmasrcfile -o objs/lzma/"$(basename $lzmasrcfile)".o
+	for lzmasrcfile in src/lzma/*.cpp; do
+		g++ -c -Wall -Iinclude $lzmasrcfile -o objs/lzma/"$(basename $lzmasrcfile)".o
 	done
 	ld -r objs/lzma/*.o -o objs/lzma.o
 fi
