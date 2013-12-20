@@ -20,7 +20,6 @@ struct seat;
 
 extern int WINDOW_WIDTH, WINDOW_HEIGHT;
 
-enum { ATTRIB_POSITION = 0, ATTRIB_NORMAL = 1, ATTRIB_TEXCOORD = 2 };
 #define BUFFER_OFFSET(offset) ((char*)NULL + (offset))
 
 int create_gl_window(int width, int height);

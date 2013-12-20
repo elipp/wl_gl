@@ -1,14 +1,12 @@
 precision mediump float;
 varying vec3 v_normal;
-varying vec2 v_texcoord;
-uniform sampler2D texture0;
 
-const vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
+uniform vec4 vec4_color;
+
 vec3 light_dir = normalize(vec3(1.0, 3.0, 1.0));
 
 void main() {
-	vec4 texcolor = vec4(0.89, 0.2, 0.2, 1.0);
+	vec4 texcolor = vec4_color; //vec4(0.89, 0.2, 0.2, 1.0);
 	float d = dot(normalize(v_normal), light_dir);
 	gl_FragColor = d*texcolor;
-	
 }

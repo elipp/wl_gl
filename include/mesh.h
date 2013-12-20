@@ -20,14 +20,17 @@ private:
 
 	ShaderProgram *shader;
 
-	GLuint texId;
 	std::string name;
+	bool textured; 
 	bool bad;
+	
+	GLuint texId;
 
 public:
 	bool is_bad() const { return bad; }
 	void render();
-	mesh_t(std::string filename, ShaderProgram *shader, GLuint texture_id);
+	mesh_t(std::string filename, ShaderProgram *shader, bool textured, GLuint texture_id = 0);
+
 	void use_modelview(const mat4 &mv) { modelview = mv; }
 
 };

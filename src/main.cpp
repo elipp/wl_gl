@@ -37,7 +37,7 @@ static vec4 camera_pos = vec4(0.0, 0.0, -15.0, 1.0);
 static vec4 camera_vel = vec4(0.0, 0.0, 0.0, 0.0);
 
 static ShaderProgram *terrain_shader, *chassis_shader;
-static mesh_t *terrain_mesh, *car_mesh;
+static mesh_t *terrain_mesh, *chassis_mesh, *wheel_mesh;
 
 float mouse_dx = 0, mouse_dy = 0;
 
@@ -53,11 +53,14 @@ int init_gl(struct window *window) {
 	terrain_shader = new ShaderProgram("shaders/terrain");
 	chassis_shader = new ShaderProgram("shaders/chassis");
 
-	terrain_mesh = new mesh_t("models/mappi.bobj", terrain_shader, grass_texId);
+	terrain_mesh = new mesh_t("models/mappi.bobj", terrain_shader, true, grass_texId);
 	assert(terrain_mesh->is_bad() == false);
 
-	car_mesh = new mesh_t("models/chassis.bobj", chassis_shader, grass_texId);
-	assert(car_mesh->is_bad() == false);
+	chassis_mesh = new mesh_t("models/chassis.bobj", chassis_shader, false);
+	assert(chassis_mesh->is_bad() == false);
+
+	wheel_mesh = new mesh_t("models/wheel.bobj", chassis_shader, false);
+	assert(wheel_mesh->is_bad() == false);
 
 	/*
 	GLushort *indices = new GLushort[0xFFFF];
@@ -71,8 +74,8 @@ int init_gl(struct window *window) {
 	*/
 
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
-	glDepthMask(true);
+	//glDepthFunc(GL_LEQUAL);
+	//glDepthMask(true);
 
 	return 1;
 }
@@ -112,11 +115,56 @@ void draw_connected_clients() {
 
 		vec4 car_pos = car.position();
 
-		mat4 modelview = View * mat4::translate(car_pos) * mat4::rotate(-car.state.direction, 0.0, 1.0, 0.0);
+		mat4 modelview = View * mat4::translate(car_pos + vec4(0.0, -0.8, 0.0, 0.0)) * mat4::rotate(-car.state.direction, 0.0, 1.0, 0.0);
 		mat4 mv = modelview*mat4::rotate(car.state.susp_angle_roll, 1.0, 0.0, 0.0);
 
-		car_mesh->use_modelview(mv);
-		car_mesh->render();
+		chassis_shader->update_uniform("vec4_color", (const GLvoid*)colors[iter.second.info.color].rawData());
+
+		chassis_mesh->use_modelview(mv);
+		chassis_mesh->render();
+
+		static const vec4 wheel_color(0.07, 0.07, 0.07, 1.0);
+		chassis_shader->update_uniform("vec4_color", (const GLvoid*)wheel_color.rawData());
+
+		// front wheels
+		static const mat4 front_left_wheel_translation = mat4::translate(-2.2, -0.6, 0.9);
+		mv = modelview;
+		mv *= front_left_wheel_translation;
+		mv *= mat4::rotate(M_PI - car.state.front_wheel_angle, 0.0, 1.0, 0.0);
+		mv *= mat4::rotate(-car.state.wheel_rot, 0.0, 0.0, 1.0);
+
+		wheel_mesh->use_modelview(mv);
+		wheel_mesh->render();
+
+		static const mat4 front_right_wheel_translation = mat4::translate(-2.2, -0.6, -0.9);
+		mv = modelview;
+		mv *= front_right_wheel_translation;
+		mv *= mat4::rotate(-car.state.front_wheel_angle, 0.0, 1.0, 0.0);
+		mv *= mat4::rotate(car.state.wheel_rot, 0.0, 0.0, 1.0);
+
+		wheel_mesh->use_modelview(mv);
+		wheel_mesh->render();
+	
+		// back wheels
+		static const mat4 back_left_wheel_translation = mat4::translate(1.3, -0.6, 0.9);
+		mv = modelview;
+		mv *= back_left_wheel_translation;
+		mv *= mat4::rotate(car.state.wheel_rot, 0.0, 0.0, 1.0);
+		mv *= mat4::rotate(M_PI, 0.0, 1.0, 0.0);
+
+		wheel_mesh->use_modelview(mv);
+		wheel_mesh->render();
+	
+		static const mat4 back_right_wheel_translation = mat4::translate(1.3, -0.6, -0.9);
+
+		mv = modelview;
+		mv *= back_right_wheel_translation;
+		mv *= mat4::rotate(car.state.wheel_rot, 0.0, 0.0, 1.0);
+		
+		wheel_mesh->use_modelview(mv);
+		wheel_mesh->render();
+
+
 	}
 
 
@@ -163,7 +211,7 @@ void redraw(void *data, struct wl_callback *callback, uint32_t time) {
 	mouse_dx = mouse_dy = 0;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glClearColor(0.0, 0.0, 0.0, 0.5);
+	//glClearColor(0.0, 0.0, 0.0, 0.5);
 
 	terrain_mesh->use_modelview(View*mat4::scale(50, 50, 50));
 	terrain_mesh->render();

@@ -68,22 +68,19 @@ static int loadlzmabobj(const std::string &filename, GLuint *VBOid, int *num_tri
 
 void mesh_t::render() {
 	
-/*	mat4 ModelView = mat4::translate(this->position);
-	ModelView *= this->orientation.toRotationMatrix();
-	ModelView *= View; */
-
 	glUseProgram(shader->program_id);
 
-	glUniformMatrix4fv(shader->ModelView_uniform_location, 1, GL_FALSE,
-			(const GLfloat *)this->modelview.rawData());
-	glUniformMatrix4fv(shader->Projection_uniform_location, 1, GL_FALSE,
-			(const GLfloat*)Projection.rawData());
+	shader->update_uniform("mat4_ModelView", (const GLvoid*)this->modelview.rawData());
+	shader->update_uniform("mat4_Projection", (const GLvoid*)Projection.rawData());
 
+	if (this->textured) {
+		static const GLint zero = 0;
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, this->texId);
+		shader->update_uniform("sampler2D_texture0", (const GLvoid*)&zero);
+	}
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, this->texId);
-	glUniform1i(shader->sampler0_uniform_location, 0);
 
 	my_glBindVertexArray(this->VAOid);
 	glDrawArrays(GL_TRIANGLES, 0, this->num_triangles*3);
@@ -93,8 +90,8 @@ void mesh_t::render() {
 	
 }
 
-mesh_t::mesh_t(std::string filename, ShaderProgram *shader_program, GLuint texture_id)
-	: shader(shader_program), texId(texture_id) {
+mesh_t::mesh_t(std::string filename, ShaderProgram *shader_program, bool is_textured, GLuint texture_id)
+	: shader(shader_program), textured(is_textured), texId(texture_id) {
 
 	this->bad = true;
 

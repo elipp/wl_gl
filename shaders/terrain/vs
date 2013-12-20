@@ -1,5 +1,5 @@
-uniform mat4 ModelView;
-uniform mat4 Projection;
+uniform mat4 mat4_ModelView;
+uniform mat4 mat4_Projection;
 
 attribute vec3 attrib_Position;
 attribute vec3 attrib_Normal;
@@ -10,7 +10,7 @@ varying vec2 v_texcoord;
 
 void main() {
 	vec4 p = vec4(attrib_Position, 1.0);
-	gl_Position = Projection*ModelView*p;
-	v_normal = normalize(mat3(ModelView)*attrib_Normal);
+	gl_Position = mat4_Projection*mat4_ModelView*p;
+	v_normal = normalize(mat3(mat4_ModelView)*attrib_Normal);
 	v_texcoord = attrib_TexCoord;
 }
