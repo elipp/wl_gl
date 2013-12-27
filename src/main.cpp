@@ -29,7 +29,7 @@ mat4 View;
 
 Quaternion viewq;
 
-int WINDOW_WIDTH = 1680, WINDOW_HEIGHT = 1050;
+int WINDOW_WIDTH = 800, WINDOW_HEIGHT = 600;
 
 static GLuint grass_texId;
 
@@ -211,7 +211,7 @@ void redraw(void *data, struct wl_callback *callback, uint32_t time) {
 	mouse_dx = mouse_dy = 0;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	//glClearColor(0.0, 0.0, 0.0, 0.5);
+	glClearColor(0.0, 0.0, 0.0, 0.5);
 
 	terrain_mesh->use_modelview(View*mat4::scale(50, 50, 50));
 	terrain_mesh->render();
@@ -221,7 +221,7 @@ void redraw(void *data, struct wl_callback *callback, uint32_t time) {
 		draw_connected_clients();
 	}
 
-	/*
+	
 	if (window->opaque || window->fullscreen) {
 		region = wl_compositor_create_region(window->display->compositor);
 		wl_region_add(region, 0, 0, window->geometry.width, window->geometry.height);
@@ -230,7 +230,7 @@ void redraw(void *data, struct wl_callback *callback, uint32_t time) {
 		wl_region_destroy(region);
 	} else {
 		wl_surface_set_opaque_region(window->surface, NULL);
-	}*/
+	}
 
 	window->callback = wl_surface_frame(window->surface);
 	wl_callback_add_listener(window->callback, &frame_listener, window);

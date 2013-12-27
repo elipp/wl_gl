@@ -7,7 +7,8 @@
 #include "wl_stuff.h"
 #include "shader.h"
 
-class mesh_t {
+class mesh_t : public lin_alg_aligned16_base {
+
 private:
 	vec4 position;
 	Quaternion orientation;
@@ -32,7 +33,6 @@ public:
 	mesh_t(std::string filename, ShaderProgram *shader, bool textured, GLuint texture_id = 0);
 
 	void use_modelview(const mat4 &mv) { modelview = mv; }
-
 };
 
 

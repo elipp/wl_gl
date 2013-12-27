@@ -85,7 +85,7 @@ static SRes Decode2(CLzmaDec *state, ISeqOutStream *outStream, ISeqInStream *inS
 		
       outPos = 0;
       
-      if (res != SZ_OK || thereIsSize && unpackSize == 0)
+      if (res != SZ_OK || (thereIsSize && unpackSize == 0))
         return res;
       
       if (inProcessed == 0 && outProcessed == 0)
