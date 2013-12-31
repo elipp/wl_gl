@@ -9,24 +9,35 @@
 #include <cassert>
 #include <cstring>
 
-void update_uniform_mat4(GLuint location, const GLvoid* data) {
+static void update_uniform_mat4(GLuint location, const GLvoid* data) {
 	glUniformMatrix4fv(location, 1, GL_FALSE, (const GLfloat*)data);
 }
 
-void update_uniform_vec4(GLuint location, const GLvoid* data) {
+static void update_uniform_vec4(GLuint location, const GLvoid* data) {
 	glUniform4fv(location, 1, (const GLfloat*)data);
 }
 
-void update_uniform_1i(GLuint location, const GLvoid* data) {
+static void update_uniform_1i(GLuint location, const GLvoid* data) {
 	glUniform1i(location, (*(GLint*)data));
 }
 
-void update_uniform_1f(GLuint location, const GLvoid* data) {
+static void update_uniform_1f(GLuint location, const GLvoid* data) {
 	glUniform1f(location, (*(GLfloat*)data));
 }
 
-void update_uniform_sampler2D(GLuint location, const GLvoid* data) {
+static void update_uniform_sampler2D(GLuint location, const GLvoid* data) {
 	update_uniform_1i(location, data);
+}
+
+static void setup_attributes_V3N3T2(GLuint shader_program_id) {
+	glBindAttribLocation(shader_program_id, ATTRIB_POSITION, "attrib_Position");
+	glBindAttribLocation(shader_program_id, ATTRIB_NORMAL, "attrib_Normal");
+	glBindAttribLocation(shader_program_id, ATTRIB_TEXCOORD, "attrib_TexCoord");
+}
+
+static void setup_attributes_V2T2(GLuint shader_program_id) {
+	glBindAttribLocation(shader_program_id, ATTRIB_POSITION, "attrib_Position");
+	glBindAttribLocation(shader_program_id, ATTRIB_NORMAL, "attrib_Normal");
 }
 
 static GLuint create_shader(const std::string &filename, GLenum shader_type) {
@@ -38,7 +49,7 @@ static GLuint create_shader(const std::string &filename, GLenum shader_type) {
 
 	std::ifstream in(filename);
 	if (!in.is_open()) {
-		std::cerr << "Couldn't open shader file.\n";
+		fprintf(stderr, "fatal error: couldn't open shader file \"%s\".\n", filename.c_str());
 		exit(1);
 	}
 
@@ -130,7 +141,7 @@ uniform_location_type_pair* ShaderProgram::get_uniform_location_type_pair(const 
 }
 
 
-ShaderProgram::ShaderProgram(const std::string &folder_path) {
+ShaderProgram::ShaderProgram(const std::string &folder_path, int SHADER_ATTRIB_FORMAT) {
 
 	GLuint fs, vs;
 	GLint status;
@@ -162,10 +173,9 @@ ShaderProgram::ShaderProgram(const std::string &folder_path) {
 
 	glUseProgram(this->program_id);
 
-	glBindAttribLocation(this->program_id, ATTRIB_POSITION, "attrib_Position");
-	glBindAttribLocation(this->program_id, ATTRIB_NORMAL, "attrib_Normal");
-	glBindAttribLocation(this->program_id, ATTRIB_TEXCOORD, "attrib_TexCoord");
-	
+	static void (*ATTRIB_SETUP_FUNCTIONS[2])(GLuint) = { setup_attributes_V3N3T2, setup_attributes_V2T2 };
+	ATTRIB_SETUP_FUNCTIONS[SHADER_ATTRIB_FORMAT](this->program_id);
+
 	construct_uniform_map();
 
 	glUseProgram(0);
@@ -177,7 +187,7 @@ void ShaderProgram::update_uniform(const std::string &name, const GLvoid* data) 
 //	fprintf(stderr, "calling update_uniform for uniform \"%s\"\n", name.c_str());
 	auto iter = uniforms.find(name);
 	if (iter == uniforms.end()) {
-//		fprintf(stderr, "ShaderProgram::update_uniform: shader %s: warning! uniform \"%s\" not active in shader program.\n", id_string.c_str(), name.c_str());
+		fprintf(stderr, "ShaderProgram::update_uniform: shader %s: warning! uniform \"%s\" not active in shader program.\n", id_string.c_str(), name.c_str());
 
 		return;
 	}
@@ -186,6 +196,19 @@ void ShaderProgram::update_uniform(const std::string &name, const GLvoid* data) 
 	glUseProgram(this->program_id);
 	iter->second.uniform_update_func(uniform_location, data);
 
+}
+
+void ShaderProgram::update_sampler2D(const std::string &sampler2D_name, GLuint value) {
+	auto iter = uniforms.find(sampler2D_name);
+	if (iter == uniforms.end()) {
+//		fprintf(stderr, "ShaderProgram::update_uniform: shader %s: warning! uniform \"%s\" not active in shader program.\n", id_string.c_str(), sampler2D_name.c_str());
+
+		return;
+	}
+
+	glUseProgram(this->program_id);
+	glUniform1i(iter->second.location, value);
+	
 }
 
 ShaderProgram::~ShaderProgram() {

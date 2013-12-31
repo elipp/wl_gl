@@ -27,7 +27,7 @@ void protocol_get_header_data(const char* buffer, _OUT PTCLHEADERDATA *out_data)
 
 void buffer_print_raw(const char* buffer, size_t size) {
 
-	SERVER_PRINT("buffer_print_raw: printing %lu bytes of data.\n", size);
+	SERVER_PRINT("buffer_print_raw: printing %ld bytes of data.\n", (long)size);
 	for (size_t i = 0; i < size; ++i) {
 		if ((unsigned char)buffer[i] < 0x7F && (unsigned char)buffer[i] > 0x1F) {
 			SERVER_PRINT("%c  ", buffer[i]);

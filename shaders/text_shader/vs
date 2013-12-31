@@ -1,0 +1,13 @@
+attribute vec2 attrib_Position;
+attribute vec2 attrib_TexCoord;
+
+uniform mat4 mat4_Projection;
+uniform mat4 mat4_ModelView;
+
+varying vec2 TexCoord_FS_in;
+
+void main(void) {
+	vec4 transformed = mat4_Projection*mat4_ModelView*vec4(attrib_Position, 0.0, 1.0);
+	gl_Position = transformed;
+	TexCoord_FS_in = attrib_TexCoord;
+}

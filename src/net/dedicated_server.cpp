@@ -1,7 +1,6 @@
 #include "net/server.h"
 #include "common.h"
 
-
 #ifdef _WIN32
 #include <tchar.h>
 
@@ -21,6 +20,8 @@ BOOL CtrlHandler( DWORD fdwCtrlType ) {
 
 #include <stdio.h>
 #include <signal.h>
+
+#define PRINT_STDERR 
 
 void sigint_handler(int signum) {
 

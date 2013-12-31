@@ -68,6 +68,8 @@ static int loadlzmabobj(const std::string &filename, GLuint *VBOid, int *num_tri
 
 void mesh_t::render() {
 	
+
+	glEnable(GL_DEPTH_TEST);
 	glUseProgram(shader->program_id);
 
 	shader->update_uniform("mat4_ModelView", (const GLvoid*)this->modelview.rawData());

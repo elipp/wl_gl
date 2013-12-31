@@ -19,6 +19,8 @@ struct window;
 struct seat;
 
 extern int WINDOW_WIDTH, WINDOW_HEIGHT;
+#define HALF_WINDOW_WIDTH (WINDOW_WIDTH/2)
+#define HALF_WINDOW_HEIGHT (WINDOW_HEIGHT/2)
 
 #define BUFFER_OFFSET(offset) ((char*)NULL + (offset))
 

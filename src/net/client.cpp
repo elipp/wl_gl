@@ -48,10 +48,8 @@ static Car local_car;
 
 int LocalClient::connect(const std::string &ip_port_string) {
 	
-	// establish what can called a virtual connection :P
-
 	client.info.ip_string = "127.0.0.1";
-	client.info.id = ID_CLIENT_UNASSIGNED;	// not assigned
+	client.info.id = ID_CLIENT_UNASSIGNED;	
 	
 	std::vector<std::string> tokens = split(ip_port_string, ':');
 

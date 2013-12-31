@@ -15,13 +15,9 @@ struct uniform_location_type_pair {
 	UNIFORM_UPDATE_FUNCP uniform_update_func;
 };
 
-void update_uniform_mat4(GLuint location, const GLvoid* data);
-void update_uniform_vec4(GLuint location, const GLvoid* data);
-void update_uniform_1i(GLuint location, const GLvoid* data);
-void update_uniform_1f(GLuint location, const GLvoid* data);
-void update_uniform_sampler2D(GLuint location, const GLvoid* data);
-
 typedef std::unordered_map<std::string, uniform_location_type_pair> uniform_map_t;
+
+enum { SHADER_ATTRIB_FORMAT_V3N3T2 = 0, SHADER_ATTRIB_FORMAT_V2T2 };
 
 class ShaderProgram {
 
@@ -31,9 +27,10 @@ public:
 	GLuint program_id;
 
 	void update_uniform(const std::string &name, const GLvoid* data);
+	void update_sampler2D(const std::string &sampler2D_name, GLuint value);
 	uniform_location_type_pair* get_uniform_location_type_pair(const std::string &name);
 	void construct_uniform_map();
-	ShaderProgram(const std::string &folder_path);
+	ShaderProgram(const std::string &folder_path, int SHADER_ATTRIB_FORMAT);
 	~ShaderProgram();
 
 };

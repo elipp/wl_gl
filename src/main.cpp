@@ -49,9 +49,10 @@ int init_gl(struct window *window) {
 	glViewport(0, 0, window->geometry.width, window->geometry.height);
 
 	if (!load_texture("textures/grass.jpg", &grass_texId, 0)) return 0;
+	if (!load_texture("textures/dina_all.png", &text_texId, 0)) return 0;
 
-	terrain_shader = new ShaderProgram("shaders/terrain");
-	chassis_shader = new ShaderProgram("shaders/chassis");
+	terrain_shader = new ShaderProgram("shaders/terrain", SHADER_ATTRIB_FORMAT_V3N3T2);
+	chassis_shader = new ShaderProgram("shaders/chassis", SHADER_ATTRIB_FORMAT_V3N3T2);
 
 	terrain_mesh = new mesh_t("models/mappi.bobj", terrain_shader, true, grass_texId);
 	assert(terrain_mesh->is_bad() == false);
@@ -62,6 +63,11 @@ int init_gl(struct window *window) {
 	wheel_mesh = new mesh_t("models/wheel.bobj", chassis_shader, false);
 	assert(wheel_mesh->is_bad() == false);
 
+	text_shader = new ShaderProgram("shaders/text_shader", SHADER_ATTRIB_FORMAT_V2T2);
+
+	onScreenLog::init();
+	VarTracker::init();
+	
 	/*
 	GLushort *indices = new GLushort[0xFFFF];
 	for (GLuint i = 0; i < 0xFFFF; ++i) {
@@ -221,6 +227,9 @@ void redraw(void *data, struct wl_callback *callback, uint32_t time) {
 		draw_connected_clients();
 	}
 
+	onScreenLog::print("moikkelis\n");
+	onScreenLog::dispatch_print_queue();
+	onScreenLog::draw();
 	
 	if (window->opaque || window->fullscreen) {
 		region = wl_compositor_create_region(window->display->compositor);
