@@ -152,7 +152,7 @@ int LocalClient::handshake() {
 #define RETRY_GRANULARITY_MS 1000
 #define NUM_RETRIES 3
 		
-	PRINT( "LocalClient::sending handshake to remote.\n");
+	PRINT("LocalClient::sending handshake to remote.\n");
 	
 	// FIXME: currently broken when handshaking with localhost :P
 	// the WS2 select() call reports "data available" when sending to 127.0.0.1, despite different port.

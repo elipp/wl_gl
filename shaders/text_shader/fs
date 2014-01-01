@@ -1,18 +1,17 @@
-precision mediump float;
-varying vec2 TexCoord_FS_in;
+precision highp float;
 
 uniform sampler2D sampler2D_texture_color;
 uniform vec4 vec4_text_color;
 
+varying vec2 TexCoord_FS_in;
+
 void main(void) {
-	vec4 col = texture2D(sampler2D_texture_color, TexCoord_FS_in);
-//	gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+	vec4 col = texture2D(sampler2D_texture_color, TexCoord_FS_in);//vec2(TexCoord_FS_in.x, 1.0-TexCoord_FS_in.y));
 
-	if (col.g < 0.99) { // see the dina_all texture for reference :P
-		discard;
-	} else {
-		gl_FragColor = vec4_text_color;
-	}
+	float alpha = 1.0;
+	if (col.g < 0.1) {
+		alpha = 0.0;
+	} 
+
+	gl_FragColor = vec4(vec4_text_color.xyz, vec4_text_color.w*alpha);
 }
-
-

@@ -76,13 +76,10 @@ void mesh_t::render() {
 	shader->update_uniform("mat4_Projection", (const GLvoid*)Projection.rawData());
 
 	if (this->textured) {
-		static const GLint zero = 0;
-
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, this->texId);
-		shader->update_uniform("sampler2D_texture0", (const GLvoid*)&zero);
+		shader->update_sampler2D("sampler2D_texture0", 0);
 	}
-
 
 	my_glBindVertexArray(this->VAOid);
 	glDrawArrays(GL_TRIANGLES, 0, this->num_triangles*3);

@@ -31,7 +31,7 @@ Quaternion viewq;
 
 int WINDOW_WIDTH = 800, WINDOW_HEIGHT = 600;
 
-static GLuint grass_texId;
+GLuint grass_texId;
 
 static vec4 camera_pos = vec4(0.0, 0.0, -15.0, 1.0);
 static vec4 camera_vel = vec4(0.0, 0.0, 0.0, 0.0);
@@ -43,6 +43,8 @@ float mouse_dx = 0, mouse_dy = 0;
 
 int running = 1;
 
+int (*PRINT)(const char*, ...);
+
 int init_gl(struct window *window) {
 
 	Projection = mat4::proj_persp(M_PI/6, ((float)WINDOW_WIDTH/(float)WINDOW_HEIGHT), 4.0, 1000.0);
@@ -53,6 +55,7 @@ int init_gl(struct window *window) {
 
 	terrain_shader = new ShaderProgram("shaders/terrain", SHADER_ATTRIB_FORMAT_V3N3T2);
 	chassis_shader = new ShaderProgram("shaders/chassis", SHADER_ATTRIB_FORMAT_V3N3T2);
+	text_shader = new ShaderProgram("shaders/text_shader", SHADER_ATTRIB_FORMAT_V2T2);
 
 	terrain_mesh = new mesh_t("models/mappi.bobj", terrain_shader, true, grass_texId);
 	assert(terrain_mesh->is_bad() == false);
@@ -63,7 +66,6 @@ int init_gl(struct window *window) {
 	wheel_mesh = new mesh_t("models/wheel.bobj", chassis_shader, false);
 	assert(wheel_mesh->is_bad() == false);
 
-	text_shader = new ShaderProgram("shaders/text_shader", SHADER_ATTRIB_FORMAT_V2T2);
 
 	onScreenLog::init();
 	VarTracker::init();
@@ -199,6 +201,10 @@ void redraw(void *data, struct wl_callback *callback, uint32_t time) {
 	if (keys[KEY_S]) camera_vel -= vec4(0.0, 0.0, 0.01, 0.0);
 	if (keys[KEY_A]) camera_vel += vec4(0.007, 0.0, 0.0, 0.0);
 	if (keys[KEY_D]) camera_vel -= vec4(0.007, 0.0, 0.0, 0.0);
+
+	if (keys[KEY_ENTER]) { PRINT("MOROO! (%f)\n", camera_vel(0)); keys[KEY_ENTER] = false;}
+	if (keys[KEY_PAGEDOWN]) { onScreenLog::scroll(-char_spacing_vert); keys[KEY_PAGEDOWN] = false; }
+	if (keys[KEY_PAGEUP]) { onScreenLog::scroll(char_spacing_vert); keys[KEY_PAGEUP] = false; }
 	
 
 	#define TURNMOD 10
@@ -227,7 +233,6 @@ void redraw(void *data, struct wl_callback *callback, uint32_t time) {
 		draw_connected_clients();
 	}
 
-	onScreenLog::print("moikkelis\n");
 	onScreenLog::dispatch_print_queue();
 	onScreenLog::draw();
 	
@@ -259,6 +264,8 @@ int main(int argc, char **argv) {
 
 	struct sigaction sigint;
 
+	PRINT = onScreenLog::print;
+
 	sigint.sa_handler = signal_int;
 	sigemptyset(&sigint.sa_mask);
 	sigint.sa_flags = SA_RESETHAND;
@@ -268,8 +275,9 @@ int main(int argc, char **argv) {
 	if (!create_gl_window(WINDOW_WIDTH, WINDOW_HEIGHT)) return 0;
 
 	LocalClient::set_name(get_login_username());	
-	if (!LocalClient::connect("127.0.0.1:50000")) {
-		PRINT("connecting to localhost:50000 failed!\n");
+	std::string ip_string("127.0.0.1:50000");
+	if (!LocalClient::connect(ip_string)) {
+		PRINT("connecting to %s failed!\n", ip_string.c_str());
 	}
 
 	while (running && ret != -1) {

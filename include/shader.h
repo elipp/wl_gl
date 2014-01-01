@@ -7,6 +7,7 @@
 #include "wl_stuff.h"
 
 enum { ATTRIB_POSITION = 0, ATTRIB_NORMAL, ATTRIB_TEXCOORD };
+enum { TEXT_ATTRIB_POSITION = 0, TEXT_ATTRIB_TEXCOORD };
 
 typedef void (*UNIFORM_UPDATE_FUNCP)(GLuint, const GLvoid*);
 

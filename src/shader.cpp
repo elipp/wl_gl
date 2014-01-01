@@ -1,4 +1,5 @@
 #include "shader.h"
+#include "text.h"
 
 #include <fstream>
 #include <iostream>
@@ -29,15 +30,25 @@ static void update_uniform_sampler2D(GLuint location, const GLvoid* data) {
 	update_uniform_1i(location, data);
 }
 
+static const char *attrib_Position = "attrib_Position";
+static const char *attrib_Normal = "attrib_Normal";
+static const char *attrib_TexCoord = "attrib_TexCoord";
+
+#define BIND_ATTRIB_REPORT(program_id, location, attrib_string) do {\
+ glBindAttribLocation((program_id), (location), attrib_string); \
+PRINT("shader %u: bound attrib \"%s\" to location %d (%s)\n", program_id, attrib_string, location, #location);\
+fprintf(stderr, "shader %u: bound attrib \"%s\" to location %d (%s)\n", program_id, attrib_string, location, #location);\
+} while(0)
+
 static void setup_attributes_V3N3T2(GLuint shader_program_id) {
-	glBindAttribLocation(shader_program_id, ATTRIB_POSITION, "attrib_Position");
-	glBindAttribLocation(shader_program_id, ATTRIB_NORMAL, "attrib_Normal");
-	glBindAttribLocation(shader_program_id, ATTRIB_TEXCOORD, "attrib_TexCoord");
+	BIND_ATTRIB_REPORT(shader_program_id, ATTRIB_POSITION, attrib_Position);
+	BIND_ATTRIB_REPORT(shader_program_id, ATTRIB_NORMAL, attrib_Normal);
+	BIND_ATTRIB_REPORT(shader_program_id, ATTRIB_TEXCOORD, attrib_TexCoord);
 }
 
 static void setup_attributes_V2T2(GLuint shader_program_id) {
-	glBindAttribLocation(shader_program_id, ATTRIB_POSITION, "attrib_Position");
-	glBindAttribLocation(shader_program_id, ATTRIB_NORMAL, "attrib_Normal");
+	BIND_ATTRIB_REPORT(shader_program_id, TEXT_ATTRIB_POSITION, attrib_Position);
+	BIND_ATTRIB_REPORT(shader_program_id, TEXT_ATTRIB_TEXCOORD, attrib_TexCoord);	
 }
 
 static GLuint create_shader(const std::string &filename, GLenum shader_type) {
@@ -128,7 +139,7 @@ void ShaderProgram::construct_uniform_map() {
 
 		uniforms.insert(std::pair<std::string, uniform_location_type_pair>(std::string(uniform_name_buf), p));
 
-		fprintf(stderr, "construct_uniform_map: shader %s: inserted uniform %s with location %d.\n", id_string.c_str(), uniform_name_buf, p.location);
+		PRINT("construct_uniform_map: shader %s: inserted uniform %s with location %d.\n", id_string.c_str(), uniform_name_buf, p.location);
 	}
 }
 

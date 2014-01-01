@@ -23,6 +23,7 @@
 #include <assert.h>
 #include "wl_stuff.h"
 #include "lin_alg.h"
+#include "text.h"
 
 struct display display = { 0 };
 struct window window = { 0 };
@@ -152,16 +153,20 @@ static void handle_ping(void *data, struct wl_shell_surface *shell_surface, uint
 static void handle_configure(void *data, struct wl_shell_surface *shell_surface, uint32_t edges, int32_t width, int32_t height) {
 	struct window *window = (struct window*)data;
 
+	WINDOW_WIDTH = width;
+	WINDOW_HEIGHT = height;
+
+	window->geometry.width = width;
+	window->geometry.height = height;
+
 	if (window->native) {
 		wl_egl_window_resize(window->native, width, height, 0, 0);
 		Projection = mat4::proj_persp(M_PI/6, ((float)width/(float)height), 4.0, 1000.0);
 		glViewport(0, 0, width, height);
-
+		onScreenLog::update_overlay_pos();
+		text_set_Projection(mat4::proj_ortho(0.0, width, height, 0.0, -1.0, 1.0));
 	}
 	
-	window->geometry.width = width;
-	window->geometry.height = height;
-
 	if (!window->fullscreen)
 		window->window_size = window->geometry;
 }

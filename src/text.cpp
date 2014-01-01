@@ -27,7 +27,7 @@ float onScreenLog::pos_x = 7.0,
       onScreenLog::pos_y = HALF_WINDOW_HEIGHT - 6;
 
 mat4 	onScreenLog::modelview 		= mat4::identity();
-GLuint 	onScreenLog::VBOid 		= 0;
+GLuint 	onScreenLog::OSL_VBOid 		= 0;
 float 	char_spacing_vert 		= 11.0;
 float 	char_spacing_horiz 		= 7.0;
 int 	onScreenLog::line_length 	= OSL_LINE_LEN;
@@ -48,8 +48,8 @@ inline GLuint texcoord_index_from_char(char c){
 
 inline struct xy get_glyph_xy(int index, float x, float y) {
 	static const struct xy glyph_base[4] = { {0.0, 0.0}, {0.0, 12.0}, {6.0, 12.0}, {6.0, 0.0} };
-	struct xy _xy = { (x) + glyph_base[(index)].x, (y) + glyph_base[(index)].y };
-	return _xy;
+	struct xy coords = { (x) + glyph_base[(index)].x, (y) + glyph_base[(index)].y };
+	return coords;
 }
 
 inline glyph glyph_from_char(float x, float y, char c) { 
@@ -95,12 +95,12 @@ static GLushort *generateSharedTextIndices() {
 
 GLuint generate_empty_VBO(size_t size, GLint FLAG) {
 
-	GLuint VBOid = 0;
-	glGenBuffers(1, &VBOid);
-	glBindBuffer(GL_ARRAY_BUFFER, VBOid);
+	GLuint empty_VBOid = 0;
+	glGenBuffers(1, &empty_VBOid);
+	glBindBuffer(GL_ARRAY_BUFFER, empty_VBOid);
 	glBufferData(GL_ARRAY_BUFFER, size, NULL, FLAG);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	return VBOid;
+	return empty_VBOid;
 
 }
 
@@ -143,16 +143,16 @@ void onScreenLog::InputField::move_cursor(int amount) {
 void onScreenLog::InputField::update_VBO() {
 
 	float x_adjustment = 0;
+
 	int i = 1;
 	for (; i < input_buffer.length()+1; ++i) {
-
 		glyph_buffer[i] = glyph_from_char(pos_x + x_adjustment, InputField::textfield_pos_y, input_buffer[i-1]);
 		x_adjustment += char_spacing_horiz;
 	}
 
 	glyph_buffer[0] = glyph_from_char(pos_x + cursor_pos*char_spacing_horiz, InputField::textfield_pos_y, CURSOR_GLYPH);
 	
-	glBindBuffer(GL_ARRAY_BUFFER, onScreenLog::InputField::VBOid);
+	glBindBuffer(GL_ARRAY_BUFFER, onScreenLog::InputField::IF_VBOid);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, (input_buffer.length()+1)*sizeof(glyph), (const GLvoid*)&glyph_buffer[0]);
 
 }
@@ -163,15 +163,15 @@ void onScreenLog::draw() {
 	
 //	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glDisable(GL_DEPTH_TEST);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glUseProgram(text_shader->program_id);
 	my_glBindVertexArray(text_VAOids[text_VAOid_log]);
 	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, text_texId);
-	text_shader->update_sampler2D("texture_color", 0);
+	text_shader->update_sampler2D("sampler2D_texture_color", 0);
 	
 	static const vec4 overlay_rect_color(0.02, 0.02, 0.02, 0.6);
 	static const vec4 log_text_color(0.91, 0.91, 0.91, 1.0);
@@ -187,11 +187,11 @@ void onScreenLog::draw() {
 	text_shader->update_uniform("vec4_text_color", (const GLvoid*)log_text_color.rawData());
 	text_shader->update_uniform("mat4_ModelView", (const GLvoid*)onScreenLog::modelview.rawData());
 
-//	glEnable(GL_SCISSOR_TEST);
-//	glScissor(0, (GLint)1.5*char_spacing_vert, (GLsizei) WINDOW_WIDTH, (GLsizei) num_lines_displayed * char_spacing_vert + 2);
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(0, (GLint)1.5*char_spacing_vert, (GLsizei) WINDOW_WIDTH, (GLsizei) num_lines_displayed * char_spacing_vert + 2);
 
 	glDrawElements(GL_TRIANGLES, 6*(num_characters_drawn-1), GL_UNSIGNED_SHORT, BUFFER_OFFSET(6*sizeof(GLushort)));
-//	glDisable(GL_SCISSOR_TEST);
+	glDisable(GL_SCISSOR_TEST);
 	glDisable(GL_BLEND);
 	my_glBindVertexArray(0);
 
@@ -212,7 +212,7 @@ void onScreenLog::InputField::draw() const {
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, text_texId);
-	text_shader->update_sampler2D("texture_color", 0);
+	text_shader->update_sampler2D("sampler2D_texture_color", 0);
 	text_shader->update_uniform("vec4_text_color", (const GLvoid*)input_field_text_color.rawData());
 
 	static const mat4 InputField_modelview = mat4::identity();
@@ -269,15 +269,15 @@ void onScreenLog::dispatch_print_queue() {
 
 
 GLuint text_generate_shared_IBO() {
-	GLuint IBOid;
+	GLuint shared_IBOid;
 	GLushort *indices = generateSharedTextIndices();
-	glGenBuffers(1, &IBOid);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBOid);
+	glGenBuffers(1, &shared_IBOid);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, shared_IBOid);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, shared_indices_count * sizeof(GLushort), (const GLvoid*)indices, GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	
 	delete [] indices;
-	return IBOid;
+	return shared_IBOid;
 }
 
 void onScreenLog::update_overlay_pos() {
@@ -286,7 +286,7 @@ void onScreenLog::update_overlay_pos() {
 		WINDOW_HEIGHT - ((num_lines_displayed + 2.0)*char_spacing_vert), 
 		char_spacing_horiz*line_length+4, 
 		char_spacing_vert*(num_lines_displayed + 5.0));
-	 glBindBuffer(GL_ARRAY_BUFFER, onScreenLog::VBOid);
+	 glBindBuffer(GL_ARRAY_BUFFER, onScreenLog::OSL_VBOid);
 	 glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(overlay_glyph), &overlay_glyph);
 }
 
@@ -298,45 +298,45 @@ int onScreenLog::init() {
 		char_spacing_horiz*line_length+4, 
 		char_spacing_vert*(num_lines_displayed + 5.0));
 
-	VBOid = generate_empty_VBO(OSL_BUFFER_SIZE*sizeof(glyph), GL_DYNAMIC_DRAW);	
+	onScreenLog::OSL_VBOid = generate_empty_VBO(OSL_BUFFER_SIZE*sizeof(glyph), GL_DYNAMIC_DRAW);	
 	text_shared_IBOid = text_generate_shared_IBO();
 
 	my_glGenVertexArrays(2, text_VAOids);
 	my_glBindVertexArray(text_VAOids[text_VAOid_log]);
 	
-	glEnableVertexAttribArray(ATTRIB_POSITION);
-	glEnableVertexAttribArray(ATTRIB_TEXCOORD);
-	glBindBuffer(GL_ARRAY_BUFFER, VBOid);
-	glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 16, BUFFER_OFFSET(0));
-	glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 16, BUFFER_OFFSET(2*sizeof(float)));
+	glEnableVertexAttribArray(TEXT_ATTRIB_POSITION);
+	glEnableVertexAttribArray(TEXT_ATTRIB_TEXCOORD);
+
+	glBindBuffer(GL_ARRAY_BUFFER, onScreenLog::OSL_VBOid);
+	glVertexAttribPointer(TEXT_ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(struct vertex2), BUFFER_OFFSET(0));
+	glVertexAttribPointer(TEXT_ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(struct vertex2), BUFFER_OFFSET(2*sizeof(float)));
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, text_shared_IBOid);
 	my_glBindVertexArray(0);
 	
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(overlay_glyph), &overlay_glyph); 
 
-	input_field.VBOid = generate_empty_VBO(INPUT_FIELD_BUFFER_SIZE*sizeof(glyph), GL_DYNAMIC_DRAW);
+	input_field.IF_VBOid = generate_empty_VBO(INPUT_FIELD_BUFFER_SIZE*sizeof(glyph), GL_DYNAMIC_DRAW);
 	input_field.textfield_pos_y = WINDOW_HEIGHT - char_spacing_vert - 4;	
 
 	my_glBindVertexArray(text_VAOids[text_VAOid_inputfield]);
-	glEnableVertexAttribArray(ATTRIB_POSITION);
-	glEnableVertexAttribArray(ATTRIB_TEXCOORD);
-	glBindBuffer(GL_ARRAY_BUFFER, input_field.VBOid);
-	glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 16, BUFFER_OFFSET(0));
-	glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 16, BUFFER_OFFSET(2*sizeof(float)));
+	glEnableVertexAttribArray(TEXT_ATTRIB_POSITION);
+	glEnableVertexAttribArray(TEXT_ATTRIB_TEXCOORD);
+
+	glBindBuffer(GL_ARRAY_BUFFER, input_field.IF_VBOid);
+	glVertexAttribPointer(TEXT_ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, sizeof(struct vertex2), BUFFER_OFFSET(0));
+	glVertexAttribPointer(TEXT_ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(struct vertex2), BUFFER_OFFSET(2*sizeof(float)));
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, text_shared_IBOid);
 	my_glBindVertexArray(0);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glDisableVertexAttribArray(ATTRIB_POSITION);
-	glDisableVertexAttribArray(ATTRIB_TEXCOORD);
+	glDisableVertexAttribArray(TEXT_ATTRIB_POSITION);
+	glDisableVertexAttribArray(TEXT_ATTRIB_TEXCOORD);
 
 	return 1;
 }
-
-
 
 void onScreenLog::update_VBO(const std::string &buffer) {
 
@@ -370,14 +370,14 @@ void onScreenLog::update_VBO(const std::string &buffer) {
 		x_adjustment += char_spacing_horiz;
 	}
 	
-	unsigned prev_current_index = current_index;
+	int prev_current_index = current_index;
 	current_index += length;
 	
-	glBindBuffer(GL_ARRAY_BUFFER, VBOid);
+	glBindBuffer(GL_ARRAY_BUFFER, onScreenLog::OSL_VBOid);
 	if (current_index >= OSL_BUFFER_SIZE - 1) {
 		// the excessive part will be flushed to the beginning of the VBO :P
-		unsigned excess = current_index - OSL_BUFFER_SIZE + 2;
-		unsigned fitting = buffer.length() - excess;
+		int excess = current_index - OSL_BUFFER_SIZE + 2;
+		int fitting = buffer.length() - excess;
 		glBufferSubData(GL_ARRAY_BUFFER, prev_current_index*sizeof(glyph), fitting*sizeof(glyph), (const GLvoid*)glyphs);
 		glBufferSubData(GL_ARRAY_BUFFER, 1*sizeof(glyph), excess*sizeof(glyph), (const GLvoid*)(glyphs + fitting));
 		current_index = excess == 0 ? 1 : excess;	// to prevent us from corrupting the overlay rectangle glyph ^^
@@ -388,15 +388,15 @@ void onScreenLog::update_VBO(const std::string &buffer) {
 
 	if (autoscroll_) {
 		float d = (y_adjustment + pos_y + log_bottom_margin) - WINDOW_HEIGHT;
-		if (d > onScreenLog::modelview(3,1)) { 
+//		if (d > onScreenLog::modelview(3,1)) { 
 			set_y_translation(-d);
-		}
+//		}
 	}
 	delete [] glyphs;
 
 }
 
-void onScreenLog::print(const char* fmt, ...) {
+int onScreenLog::print(const char* fmt, ...) {
 	
 	char *buffer = new char[OSL_BUFFER_SIZE]; 
 	va_list args;
@@ -423,6 +423,8 @@ void onScreenLog::print(const char* fmt, ...) {
 	num_characters_drawn = (num_characters_drawn > OSL_BUFFER_SIZE) ? OSL_BUFFER_SIZE : (num_characters_drawn);
 
 	delete [] buffer;
+
+	return num_characters_drawn;
 }
 
 void onScreenLog::print_string(const std::string &s) {
@@ -433,7 +435,7 @@ void onScreenLog::scroll(float ds) {
 	float y_adjustment = current_line_num * char_spacing_vert;
 	float bottom_scroll_displacement = y_adjustment + log_bottom_margin + pos_y - WINDOW_HEIGHT;
 	
-	onScreenLog::modelview.assign(3, 1, onScreenLog::modelview(3,1) + ds);
+	onScreenLog::set_y_translation(onScreenLog::modelview(3,1) + ds);
 	
 	if (bottom_scroll_displacement + onScreenLog::modelview(3,1) >= 0) {
 		autoscroll_ = false;
@@ -460,7 +462,7 @@ void onScreenLog::clear() {
 
  // *** STATIC VAR DEFS FOR VARTRACKER ***
 
-GLuint VarTracker::VBOid;
+GLuint VarTracker::VT_VBOid;
 std::vector<TrackableBase*> VarTracker::tracked;
 
 static int tracker_width_chars = 36;
@@ -472,12 +474,12 @@ glyph VarTracker::glyph_buffer[TRACKED_MAX*TRACKED_LEN_MAX];
 
 
 void VarTracker::init() {
-	VarTracker::VBOid = generate_empty_VBO(TRACKED_MAX * TRACKED_LEN_MAX * sizeof(glyph), GL_DYNAMIC_DRAW);
+	VarTracker::VT_VBOid = generate_empty_VBO(TRACKED_MAX * TRACKED_LEN_MAX * sizeof(glyph), GL_DYNAMIC_DRAW);
 	my_glGenVertexArrays(1, &vartracker_VAOid);
 	
 	my_glBindVertexArray(vartracker_VAOid);
 	
-	glBindBuffer(GL_ARRAY_BUFFER, VarTracker::VBOid);
+	glBindBuffer(GL_ARRAY_BUFFER, VarTracker::VT_VBOid);
 	glEnableVertexAttribArray(ATTRIB_POSITION);
 	glEnableVertexAttribArray(ATTRIB_TEXCOORD);
 	glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 16, BUFFER_OFFSET(0));
@@ -534,7 +536,7 @@ void VarTracker::update_VBO(const std::string &buffer) {
 	glyph_buffer[0] = solid_rectangle_glyph(VarTracker::pos_x - 5, VarTracker::pos_y - 5, tracker_width_chars * char_spacing_horiz, y_adjustment + 4*char_spacing_vert);
 
 	VarTracker::cur_total_length = buffer.length() + 1;
-	glBindBuffer(GL_ARRAY_BUFFER, VarTracker::VBOid);
+	glBindBuffer(GL_ARRAY_BUFFER, VarTracker::VT_VBOid);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, VarTracker::cur_total_length*(sizeof(glyph)), (const GLvoid*)glyph_buffer);
 
 }
@@ -553,7 +555,7 @@ void VarTracker::draw() {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, text_texId);
 
-	text_shader->update_sampler2D("texture_color", 0);
+	text_shader->update_sampler2D("sampler2D_texture_color", 0);
 	
 	static const vec4 tracker_overlay_color(0.02, 0.02, 0.02, 0.6);
 	static const vec4 tracker_text_color(0.91, 0.91, 0.91, 1.0);
@@ -603,10 +605,4 @@ void VarTracker::untrack(const void *const data_ptr) {
 void VarTracker::update_position() {
 	VarTracker::pos_x = WINDOW_WIDTH - tracker_width_chars*char_spacing_horiz;
 }
-
-
-
-
-
-
 

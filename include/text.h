@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <sstream>
+#include <cstdarg>
 
 #include "common.h"
 #include "wl_stuff.h"
@@ -15,11 +16,7 @@
 #include "precalculated_texcoords.h"
 #include "shader.h"
 
-//#ifdef NO_ONSCREENLOG
-#define PRINT(fmt, ...) do { fprintf(stderr, fmt, ##__VA_ARGS__); } while(0)
-//#else
-//#define PRINT(fmt, ...) do { onScreenLog::print(fmt, ##__VA_ARGS__); } while(0)
-//#endif
+extern int (*PRINT)(const char *fmt, ...);
 
 extern void text_set_Projection(const mat4 &proj);
 extern GLuint text_texId;
@@ -28,6 +25,7 @@ extern GLuint generate_empty_VBO(size_t size, GLint FLAG);
 
 extern float char_spacing_vert;
 extern float char_spacing_horiz;
+
 
 #define BLANK_GLYPH (sizeof(glyph_texcoords)/(8*sizeof(float)) - 1)
 
@@ -66,7 +64,7 @@ public:
 		bool changed_;
 	public:
 		
-		GLuint VBOid;
+		GLuint IF_VBOid;
 		float textfield_pos_y;
 
 		bool enabled() const { return enabled_; }
@@ -89,7 +87,7 @@ public:
 			cursor_pos = 0; 
 			input_buffer.reserve(INPUT_FIELD_BUFFER_SIZE); 
 			input_buffer.clear(); 
-			VBOid = 0;
+			IF_VBOid = 0;
 		}
 	
 	} input_field;
@@ -105,7 +103,7 @@ private:
 
 	static float pos_x, pos_y;	// ze upper left corner
 	static mat4 modelview;
-	static GLuint VBOid;
+	static GLuint OSL_VBOid;
 	static int line_length;
 	static int num_lines_displayed;
 	static int current_index;
@@ -121,7 +119,7 @@ public:
 	static void print_string(const std::string &s);
 	static void toggle_visibility() { visible_ = !visible_; }
 	static void scroll(float ds);
-	static void print(const char* format, ...);
+	static int print(const char* format, ...);
 	static void clear();
 	static void draw();
 	static int init();
@@ -178,7 +176,7 @@ class VarTracker {
 	static int cur_total_length;
 
 	static glyph glyph_buffer[TRACKED_MAX*TRACKED_LEN_MAX];
-	static GLuint VBOid;
+	static GLuint VT_VBOid;
 	static std::vector<TrackableBase*> tracked;
 	static void update_VBO(const std::string &buffer);
 

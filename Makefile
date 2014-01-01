@@ -46,7 +46,7 @@ kar: $(OBJECTS) $(NETOBJS) $(ALL_SOURCES) $(SRCDIR)/main.cpp
 	$(CXX) $(OBJECTS) $(NETOBJS) $(SRCDIR)/main.cpp -o $@ $(INCLUDES) $(COMMON_LIBS) $(WAYLAND_LIBS)
 
 dedicated_server: $(DEDICATED_SERVER_DEPS) $(ALL_SOURCES) $(SRCDIR)/net/dedicated_server.cpp
-	$(CXX) -DNO_ONSCREENLOG $(DEDICATED_SERVER_DEPS) $(SRCDIR)/net/dedicated_server.cpp -o $@ $(INCLUDES) $(COMMON_LIBS)
+	$(CXX) $(DEDICATED_SERVER_DEPS) $(SRCDIR)/net/dedicated_server.cpp -o $@ $(INCLUDES) $(COMMON_LIBS)
 	
 
 clean:

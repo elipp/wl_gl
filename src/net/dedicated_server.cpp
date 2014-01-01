@@ -1,5 +1,6 @@
 #include "net/server.h"
 #include "common.h"
+#include "text.h"
 
 #ifdef _WIN32
 #include <tchar.h>
@@ -21,7 +22,6 @@ BOOL CtrlHandler( DWORD fdwCtrlType ) {
 #include <stdio.h>
 #include <signal.h>
 
-#define PRINT_STDERR 
 
 void sigint_handler(int signum) {
 
@@ -42,6 +42,8 @@ void sigint_handler(int signum) {
 #ifdef _WIN32
 int _tmain(int argc, _TCHAR* argv[]) {
 
+	PRINT = fprintf;
+
 	timeBeginPeriod(1);
 	if(!Server::init((unsigned short)50000)) { return EXIT_FAILURE; }        // start server thread
 	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) CtrlHandler, TRUE );
@@ -54,12 +56,17 @@ int _tmain(int argc, _TCHAR* argv[]) {
 }
 
 #elif __linux__
+
+int (*PRINT)(const char*, ...);
+
 int main(int argc, char* argv[]) {
 
 /*	std::string name = get_login_username();
 	std::string timestamp = get_timestamp();
 
 	fprintf(stderr, "timestamp: %s, login username: %s\n", timestamp.c_str(), name.c_str()); */
+
+	PRINT = printf;
 	
 	signal(SIGINT, sigint_handler);
 	if(!Server::init((unsigned short)50000)) { return 1; }        // start server thread
