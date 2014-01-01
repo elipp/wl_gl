@@ -202,9 +202,8 @@ void redraw(void *data, struct wl_callback *callback, uint32_t time) {
 	if (keys[KEY_A]) camera_vel += vec4(0.007, 0.0, 0.0, 0.0);
 	if (keys[KEY_D]) camera_vel -= vec4(0.007, 0.0, 0.0, 0.0);
 
-	if (keys[KEY_ENTER]) { PRINT("MOROO! (%f)\n", camera_vel(0)); keys[KEY_ENTER] = false;}
-	if (keys[KEY_PAGEDOWN]) { onScreenLog::scroll(-char_spacing_vert); keys[KEY_PAGEDOWN] = false; }
-	if (keys[KEY_PAGEUP]) { onScreenLog::scroll(char_spacing_vert); keys[KEY_PAGEUP] = false; }
+	if (keys[KEY_PAGEDOWN]) onScreenLog::scroll(-char_spacing_vert); 
+	if (keys[KEY_PAGEUP]) onScreenLog::scroll(char_spacing_vert); 
 	
 
 	#define TURNMOD 10
