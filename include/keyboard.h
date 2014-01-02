@@ -14,6 +14,8 @@ extern bool keys[256];
 #elif __linux__
 #include <linux/input.h>
 
+#include "linux_input_h_keychar_map.h"
+
 #define KAR_KB_UP KEY_UP
 #define KAR_KB_DOWN KEY_DOWN
 #define KAR_KB_LEFT KEY_LEFT

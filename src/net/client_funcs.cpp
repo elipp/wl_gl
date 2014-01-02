@@ -53,7 +53,7 @@ int disconnect(const std::vector<std::string> &args) {
 
 int quit(const std::vector<std::string> &args) {
 	LocalClient::quit();
-	// stop_main_loop();
+	stop_main_loop();
 	return 1;
 }
 

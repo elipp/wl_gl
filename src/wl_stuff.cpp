@@ -24,6 +24,7 @@
 #include "wl_stuff.h"
 #include "lin_alg.h"
 #include "text.h"
+#include "keyboard.h"
 
 struct display display = { 0 };
 struct window window = { 0 };
@@ -164,6 +165,7 @@ static void handle_configure(void *data, struct wl_shell_surface *shell_surface,
 		Projection = mat4::proj_persp(M_PI/6, ((float)width/(float)height), 4.0, 1000.0);
 		glViewport(0, 0, width, height);
 		onScreenLog::update_overlay_pos();
+		onScreenLog::input_field.update_position();
 		text_set_Projection(mat4::proj_ortho(0.0, width, height, 0.0, -1.0, 1.0));
 	}
 	
@@ -347,7 +349,16 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *keyboard,
 		running = 0;
 	}
 	else if (state) {
+		if (onScreenLog::input_field.enabled()) {
+			onScreenLog::input_field.handle_keypress(key);		
+		}
+		else if (key == KEY_ENTER) {
+			onScreenLog::input_field.enable();
+		}
+
 		keys[key] = true;
+
+		//fprintf(stderr, "key \'%c\' pressed (code %d)!\n", linux_input_h_keymap[key], (int)key);
 	}
 	else {
 		keys[key] = false;

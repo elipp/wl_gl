@@ -59,6 +59,8 @@ int _tmain(int argc, _TCHAR* argv[]) {
 
 int (*PRINT)(const char*, ...);
 
+int running = 1;
+
 int main(int argc, char* argv[]) {
 
 /*	std::string name = get_login_username();
@@ -71,7 +73,8 @@ int main(int argc, char* argv[]) {
 	signal(SIGINT, sigint_handler);
 	if(!Server::init((unsigned short)50000)) { return 1; }        // start server thread
 
-	while (Server::is_running()) SLEEP_MS(2500);
+	while (Server::is_running() && running) SLEEP_MS(2500);
+	running = 0;
 
 	return 0;
 

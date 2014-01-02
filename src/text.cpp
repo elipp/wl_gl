@@ -1,4 +1,5 @@
 #include "text.h"
+#include "keyboard.h"
 #include "net/client.h"
 
 mat4 text_Projection = mat4::proj_ortho(0.0, WINDOW_WIDTH, WINDOW_HEIGHT, 0.0, -1.0, 1.0);
@@ -106,14 +107,8 @@ GLuint generate_empty_VBO(size_t size, GLint FLAG) {
 
 void onScreenLog::InputField::insert_char_to_cursor_pos(char c) {
 	if (input_buffer.length() < INPUT_FIELD_BUFFER_SIZE) {
-	//	if (c == VK_BACK) {
-		if (c == KEY_BACKSPACE) {	// FIXME: KEY_BACKSPACE = wrong
-			delete_char_before_cursor_pos();
-		}
-		else {
-			input_buffer.insert(input_buffer.begin() + cursor_pos, c);
-			move_cursor(1);
-		}
+		input_buffer.insert(input_buffer.begin() + cursor_pos, c);
+		move_cursor(1);
 	}
 	refresh();
 	changed_ = true;
@@ -144,7 +139,7 @@ void onScreenLog::InputField::update_VBO() {
 
 	float x_adjustment = 0;
 
-	int i = 1;
+	size_t i = 1;
 	for (; i < input_buffer.length()+1; ++i) {
 		glyph_buffer[i] = glyph_from_char(pos_x + x_adjustment, InputField::textfield_pos_y, input_buffer[i-1]);
 		x_adjustment += char_spacing_horiz;
@@ -155,6 +150,31 @@ void onScreenLog::InputField::update_VBO() {
 	glBindBuffer(GL_ARRAY_BUFFER, onScreenLog::InputField::IF_VBOid);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, (input_buffer.length()+1)*sizeof(glyph), (const GLvoid*)&glyph_buffer[0]);
 
+}
+
+int onScreenLog::InputField::handle_keypress(int keycode) {
+	switch (keycode) {
+		case KEY_ENTER:
+			onScreenLog::input_field.submit_and_parse();
+			onScreenLog::input_field.disable();
+			break;
+		case KEY_LEFT:
+			onScreenLog::input_field.move_cursor(-1);
+			break;
+		case KEY_RIGHT: 
+			onScreenLog::input_field.move_cursor(1);
+			break;
+		case KEY_BACKSPACE: 
+			onScreenLog::input_field.delete_char_before_cursor_pos();
+			break;
+		default:
+			if (maps_to_regular_char(keycode)) {
+				onScreenLog::input_field.insert_char_to_cursor_pos(linux_input_h_keymap[keycode]);
+			}
+			break;
+	}
+
+	return 1;
 }
 
 void onScreenLog::draw() {
@@ -192,7 +212,7 @@ void onScreenLog::draw() {
 
 	glDrawElements(GL_TRIANGLES, 6*(num_characters_drawn-1), GL_UNSIGNED_SHORT, BUFFER_OFFSET(6*sizeof(GLushort)));
 	glDisable(GL_SCISSOR_TEST);
-	glDisable(GL_BLEND);
+
 	my_glBindVertexArray(0);
 
 	input_field.draw();	// it's only drawn if its enabled
@@ -204,6 +224,7 @@ void onScreenLog::InputField::draw() const {
 
 	if (!enabled_) { return; }
 	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
 	
 	glUseProgram(text_shader->program_id);
 	my_glBindVertexArray(text_VAOids[text_VAOid_inputfield]);
@@ -313,7 +334,8 @@ int onScreenLog::init() {
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, text_shared_IBOid);
 	my_glBindVertexArray(0);
-	
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(overlay_glyph), &overlay_glyph); 
 
 	input_field.IF_VBOid = generate_empty_VBO(INPUT_FIELD_BUFFER_SIZE*sizeof(glyph), GL_DYNAMIC_DRAW);
@@ -343,7 +365,7 @@ void onScreenLog::update_VBO(const std::string &buffer) {
 	const size_t length = buffer.length();
 	glyph *glyphs = new glyph[length];	
 
-	int i = 0;
+	size_t i = 0;
 	static float x_adjustment = 0, y_adjustment = 0;
 	static int line_beg_index = 0;
 

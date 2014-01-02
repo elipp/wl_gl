@@ -59,6 +59,8 @@ struct Client {
 	}
 };
 
+void stop_main_loop();
+
 typedef std::unordered_map<unsigned short, struct Peer>::iterator peer_iter;
 
 class mutexed_peer_map {

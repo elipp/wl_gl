@@ -197,14 +197,15 @@ void redraw(void *data, struct wl_callback *callback, uint32_t time) {
 	if (start_time == 0)
 		start_time = time;
 
-	if (keys[KEY_W]) camera_vel += vec4(0.0, 0.0, 0.01, 0.0);
-	if (keys[KEY_S]) camera_vel -= vec4(0.0, 0.0, 0.01, 0.0);
-	if (keys[KEY_A]) camera_vel += vec4(0.007, 0.0, 0.0, 0.0);
-	if (keys[KEY_D]) camera_vel -= vec4(0.007, 0.0, 0.0, 0.0);
+	if (!onScreenLog::input_field.enabled()) {
+		if (keys[KEY_W]) camera_vel += vec4(0.0, 0.0, 0.01, 0.0);
+		if (keys[KEY_S]) camera_vel -= vec4(0.0, 0.0, 0.01, 0.0);
+		if (keys[KEY_A]) camera_vel += vec4(0.007, 0.0, 0.0, 0.0);
+		if (keys[KEY_D]) camera_vel -= vec4(0.007, 0.0, 0.0, 0.0);
 
-	if (keys[KEY_PAGEDOWN]) onScreenLog::scroll(-char_spacing_vert); 
-	if (keys[KEY_PAGEUP]) onScreenLog::scroll(char_spacing_vert); 
-	
+		if (keys[KEY_PAGEDOWN]) onScreenLog::scroll(-char_spacing_vert); 
+		if (keys[KEY_PAGEUP]) onScreenLog::scroll(char_spacing_vert); 
+	}
 
 	#define TURNMOD 10
 	// the wayland pointer_lock thing hasn't been adopted to mainline, so we'll do this in the meantime
@@ -224,6 +225,8 @@ void redraw(void *data, struct wl_callback *callback, uint32_t time) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0, 0.0, 0.0, 0.5);
 
+	glDisable(GL_BLEND);
+
 	terrain_mesh->use_modelview(View*mat4::scale(50, 50, 50));
 	terrain_mesh->render();
 
@@ -233,6 +236,7 @@ void redraw(void *data, struct wl_callback *callback, uint32_t time) {
 	}
 
 	onScreenLog::dispatch_print_queue();
+	onScreenLog::input_field.refresh();
 	onScreenLog::draw();
 	
 	if (window->opaque || window->fullscreen) {
@@ -264,6 +268,7 @@ int main(int argc, char **argv) {
 	struct sigaction sigint;
 
 	PRINT = onScreenLog::print;
+	setup_keymap();
 
 	sigint.sa_handler = signal_int;
 	sigemptyset(&sigint.sa_mask);

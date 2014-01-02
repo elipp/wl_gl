@@ -14,7 +14,8 @@ COMMON_SOURCES := $(SRCDIR)/keyboard.cpp \
 	$(SRCDIR)/shader.cpp \
 	$(SRCDIR)/texturewl.cpp \
 	$(SRCDIR)/car.cpp \
-	$(SRCDIR)/text.cpp
+	$(SRCDIR)/text.cpp \
+	$(SRCDIR)/linux_input_h_keychar_map.cpp
 
 LZMA_SOURCES := $(SRCDIR)/lzma/7zStream.cpp \
 	$(SRCDIR)/lzma/Alloc.cpp \

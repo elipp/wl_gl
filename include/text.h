@@ -82,6 +82,8 @@ public:
 		void draw() const;
 		void clear();
 
+		int handle_keypress(int keycode);
+
 		void submit_and_parse();	// also does a clear
 		InputField() {
 			cursor_pos = 0; 

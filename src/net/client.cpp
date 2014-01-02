@@ -37,6 +37,8 @@ double LocalClient::latency_ms = 0;
 TIMER LocalClient::posupd_timer;
 bool LocalClient::shutdown_requested = false;
 
+extern int running;
+
 unsigned LocalClient::latest_posupd_seq_number = 0;
 
 unsigned short LocalClient::port = 50001;
@@ -45,6 +47,8 @@ static Car local_car;
 
 //static int net_bytes_out = 0;
 //static int net_bytes_in = 0;
+
+void stop_main_loop() { running = 0; }
 
 int LocalClient::connect(const std::string &ip_port_string) {
 	
@@ -114,6 +118,7 @@ void LocalClient::stop() {
 	connected = 0;
 
 	LocalClient::socket.destroy();
+	LocalClient::latest_posupd_seq_number = 0;
 
 	shutdown_requested = false;
 }
@@ -383,7 +388,8 @@ void LocalClient::ListenTaskThread::update_positions() {
 		auto it = peers.find(id);
 		
 		if (it == peers.end()) {
-			PRINT( "update_positions: unknown peer id included in peer list (%u)\n", id);
+			PRINT("update_positions: unknown peer id included in peer list (%u)\n", id);
+			// request another peer list, reconstruct etc.
 		}
 		else {
 			size_t offset = PTCL_HEADER_LENGTH + i*PTCL_POS_DATA_SIZE + sizeof(id);
@@ -391,6 +397,7 @@ void LocalClient::ListenTaskThread::update_positions() {
 		}
 	}
 	LocalClient::posupd_timer.begin();	
+
 }
 
 static inline void interp(Car &car, float DT_COEFF) {
