@@ -2,6 +2,7 @@
 
 #include "net/socket.h"
 #include "net/server.h"
+#include "text.h"
 #include "common.h"
 
 #define IPBUFSIZE 32
@@ -27,15 +28,15 @@ void protocol_get_header_data(const char* buffer, _OUT PTCLHEADERDATA *out_data)
 
 void buffer_print_raw(const char* buffer, size_t size) {
 
-	SERVER_PRINT("buffer_print_raw: printing %ld bytes of data.\n", (long)size);
+	PRINT("buffer_print_raw: printing %ld bytes of data.\n", (long)size);
 	for (size_t i = 0; i < size; ++i) {
 		if ((unsigned char)buffer[i] < 0x7F && (unsigned char)buffer[i] > 0x1F) {
-			SERVER_PRINT("%c  ", buffer[i]);
+			PRINT("%c  ", buffer[i]);
 		}
 		else {
-			SERVER_PRINT("%02x ", (unsigned char)buffer[i]);
+			PRINT("%02x ", (unsigned char)buffer[i]);
 		}
-		if (i % 16 == 15) { SERVER_PRINT("\n"); }
+		if (i % 16 == 15) { PRINT("\n"); }
 	}
-	SERVER_PRINT("\n");
+	PRINT("\n");
 }

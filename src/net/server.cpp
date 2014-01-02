@@ -1,6 +1,8 @@
 #include "net/server.h"
 #include "net/client.h"
 #include "timer.h"
+#include "texturewl.h"
+#include "heightmap.h"
 
 #include <cmath>
 
@@ -34,6 +36,7 @@ std::unordered_map<unsigned short, struct Client> Server::clients;
 unsigned Server::num_clients = 0;
 int Server::running = 0;
 Socket Server::socket;
+HeightMap Server::heightmap;
 
 void Server::Listen::task(void) {
 
@@ -46,7 +49,7 @@ void Server::Listen::task(void) {
 		}
 	}
 	
-	SERVER_PRINT("Server: stopping ListenTaskThread.\n");
+	PRINT("Server: stopping ListenTaskThread.\n");
 }
 
 int Server::init(unsigned short port) {
@@ -54,7 +57,9 @@ int Server::init(unsigned short port) {
 	Socket::initialize();
 #endif
 	socket = Socket(port, SOCK_DGRAM, true); // blocking udp socket
-	if (socket.is_bad()) { SERVER_PRINT( "Server::init, socket init error.\n"); return 0; }
+	if (socket.is_bad()) { PRINT( "Server::init, socket init error.\n"); return 0; }
+
+	heightmap = HeightMap("textures/heightmap_grayscale.png", 32.0, 2.7475, -2.7475); // the top/bottom values were calculated by blender
 
 	Server::running = 1;
 
@@ -62,7 +67,7 @@ int Server::init(unsigned short port) {
 	PingManager.start();
 	GameStateManager.start();
 
-	SERVER_PRINT("\nServer: init successful. Bound to port %u.\n", get_port());
+	PRINT("\nServer: init successful. Bound to port %u.\n", get_port());
 	return 1;
 }
 
@@ -81,7 +86,7 @@ void Server::send_packet_of_death() {
 void Server::shutdown() {
 	// post quit messages to all clients
 	running = 0;
-	SERVER_PRINT("Server: joining worker threads.\n");
+	PRINT("Server: joining worker threads.\n");
 
 	Server::send_packet_of_death();
 
@@ -100,7 +105,7 @@ void Server::Listen::handle_current_packet(struct sockaddr_in *from) {
 	protocol_get_header_data(buffer, &header);
 
 	if (header.protocol_id != PROTOCOL_ID) {
-		SERVER_PRINT( "dropping packet. Reason: protocol_id mismatch (%x)!\nDump:\n", header.protocol_id);
+		PRINT( "dropping packet. Reason: protocol_id mismatch (%x)!\nDump:\n", header.protocol_id);
 		return;
 	}
 
@@ -108,7 +113,7 @@ void Server::Listen::handle_current_packet(struct sockaddr_in *from) {
 
 	if (header.sender_id != ID_CLIENT_UNASSIGNED && header.sender_id != ID_SERVER) {
 		if (client_iter == clients.end()) {
-			SERVER_PRINT( "Server: warning: received packet from non-existing player-id %u. Ignoring.\n", header.sender_id);
+			PRINT( "Server: warning: received packet from non-existing player-id %u. Ignoring.\n", header.sender_id);
 			return;
 		}
 	}
@@ -117,7 +122,7 @@ void Server::Listen::handle_current_packet(struct sockaddr_in *from) {
 	const unsigned char &cmd_arg = header.cmd_arg_mask.ch[1];
 
 	std::string ip = get_dot_notation_ipv4(from);
-	//SERVER_PRINT( "Received packet with size %u from %s (id = %u). Seq_number = %u\n", socket.current_data_length_in(), ip.c_str(), client_id, seq);
+	//PRINT( "Received packet with size %u from %s (id = %u). Seq_number = %u\n", socket.current_data_length_in(), ip.c_str(), client_id, seq);
 
 	switch (cmd) {
 		case C_KEYSTATE:
@@ -137,7 +142,7 @@ void Server::Listen::handle_current_packet(struct sockaddr_in *from) {
 
 			  for (auto &name_iter : clients) {
 				  if (name_iter.second.info.name == name_string) { 
-					  SERVER_PRINT("Client with name %s already found. Renaming.\n", name_string.c_str());
+					  PRINT("Client with name %s already found. Renaming.\n", name_string.c_str());
 					  name_string = name_string + "(" + std::to_string(rename) + ")";
 					  ++rename;
 					  break; 
@@ -152,14 +157,14 @@ void Server::Listen::handle_current_packet(struct sockaddr_in *from) {
 		}
 		case C_CHAT_MESSAGE: {
 			     const std::string msg(buffer + PTCL_HEADER_LENGTH);	// lines like these are rather risky though.. :D
-			     SERVER_PRINT("[%s] <%s>: %s\n", get_timestamp().c_str(), client_iter->second.info.name.c_str(), msg.c_str());
+			     PRINT("[%s] <%s>: %s\n", get_timestamp().c_str(), client_iter->second.info.name.c_str(), msg.c_str());
 			     distribute_chat_message(msg, header.sender_id);
 			     break;
 	     	}
 		case C_QUIT: 
 			remove_client(client_iter);
 		   	post_client_disconnect(header.sender_id);
-		   	SERVER_PRINT("Server: received C_QUIT from client %d\n", header.sender_id);
+		   	PRINT("Server: received C_QUIT from client %d\n", header.sender_id);
 			break;
 
 		case S_PACKET_OF_DEATH:
@@ -171,7 +176,7 @@ void Server::Listen::handle_current_packet(struct sockaddr_in *from) {
 			break;
 
 		default:
-			SERVER_PRINT("warning: received unrecognized cmdbyte %u with arg %u\n", cmd, cmd_arg);
+			PRINT("warning: received unrecognized cmdbyte %u with arg %u\n", cmd, cmd_arg);
 			break;
 
 	}
@@ -236,7 +241,7 @@ id_client_map::iterator Server::Listen::add_client(struct sockaddr_in *newclient
 
 	auto k = clients.emplace(std::make_pair(newclient.info.id, newclient));
 
-	SERVER_PRINT("Server: added client \"%s\" with id %d\n", newclient.info.name.c_str(), newclient.info.id);
+	PRINT("Server: added client \"%s\" with id %d\n", newclient.info.name.c_str(), newclient.info.id);
 
 	return k.first;
 }
@@ -268,7 +273,7 @@ id_client_map::iterator Server::remove_client(id_client_map::iterator &iter) {
 		return it;
 	}
 	else {
-		SERVER_PRINT("Server: remove client: internal error: couldn't find client %u from the client_id map (this shouldn't be happening)!\n", iter->second.info.id);
+		PRINT("Server: remove client: internal error: couldn't find client %u from the client_id map (this shouldn't be happening)!\n", iter->second.info.id);
 		return clients.end();
 	}
 }
@@ -305,7 +310,7 @@ void Server::Listen::post_peer_list() {
 #endif
 		offset += bytes;
 		if (offset >= PTCL_PACKET_BODY_LEN_MAX - 1) { 
-			SERVER_PRINT( "Server: post_peer_list: warning: offset > max!\n"); 
+			PRINT( "Server: post_peer_list: warning: offset > max!\n"); 
 			offset = PTCL_PACKET_BODY_LEN_MAX - 1; 
 			break; 
 		}
@@ -314,7 +319,7 @@ void Server::Listen::post_peer_list() {
 	peer_buf[offset] = '\0';
 	copy_to_buffer(peer_buf, offset, PTCL_HEADER_LENGTH);
 
-	SERVER_PRINT( "Server: sending peer list to all clients.\n");
+	PRINT( "Server: sending peer list to all clients.\n");
 
 	send_data_to_all(buffer, PTCL_HEADER_LENGTH + offset);
 }
@@ -324,11 +329,11 @@ void Server::broadcast_shutdown_message() {
 	PTCLHEADERDATA SHUTDOWN_HEADER = protocol_make_header(SEQN_ASSIGNED_ELSEWHERE, ID_SERVER, S_SHUTDOWN); 
 	protocol_copy_header(sbuffer, &SHUTDOWN_HEADER);
 
-	SERVER_PRINT("\nServer: broadcasting S_SHUTDOWN to all clients.\n");
+	PRINT("\nServer: broadcasting S_SHUTDOWN to all clients.\n");
 	send_data_to_all(sbuffer, PTCL_HEADER_LENGTH);
 }
 void Server::Ping::ping_client(struct Client &c) {
-	//SERVER_PRINT( "Sending S_PING to client %d. (seq = %d)\n", c.info.id, c.seq_number);
+	//PRINT( "Sending S_PING to client %d. (seq = %d)\n", c.info.id, c.seq_number);
 	// THIS IS ASSUMING THE PROTOCOL HEADER HAS BEEN PROPERLY SETUP.
 	c.active_ping_seq_number = c.seq_number;
 	protocol_update_seq_number(buffer, c.seq_number);
@@ -351,8 +356,8 @@ void Server::Ping::task() {
 			unsigned milliseconds_passed = c.ping_timer.get_ms();
 
 			if (milliseconds_passed > PING_HARD_TIMEOUT_MS) {
-				SERVER_PRINT( "client %u: no C_PING request for more than %d ms (hard timeout), kicking.\n", c.info.id, PING_HARD_TIMEOUT_MS);
-				SERVER_PRINT("milliseconds passed: %ld\n", (long)milliseconds_passed);
+				PRINT( "client %u: no C_PING request for more than %d ms (hard timeout), kicking.\n", c.info.id, PING_HARD_TIMEOUT_MS);
+				PRINT("milliseconds passed: %ld\n", (long)milliseconds_passed);
 				iter = remove_client(iter);
 			}
 			else {
@@ -450,7 +455,7 @@ void Server::increment_client_seq_number(struct Client &c) {
 
 int Server::send_data_to_client(struct Client &client, const char* buffer, size_t data_size) {
 	if (data_size > PACKET_SIZE_MAX) {
-		SERVER_PRINT( "send_data_to_client: WARNING! data_size > PACKET_SIZE_MAX. Truncating -> errors inbound.\n");
+		PRINT( "send_data_to_client: WARNING! data_size > PACKET_SIZE_MAX. Truncating -> errors inbound.\n");
 		data_size = PACKET_SIZE_MAX;
 	}
 	int bytes = socket.send_data(&client.address, buffer, data_size);

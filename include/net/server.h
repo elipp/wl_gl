@@ -6,15 +6,10 @@
 #include "protocol.h"
 #include "socket.h"
 #include "net/taskthread.h"
-
-#ifdef SERVER_CLI
-#define SERVER_PRINT(fmt, ... ) PRINT(fmt, ##__VA_ARGS__)
-#else
+#include "heightmap.h"
 
 #include "net/client.h"
 #include "text.h"
-#define SERVER_PRINT(fmt, ...) PRINT(fmt, ##__VA_ARGS__)
-#endif
 
 typedef std::unordered_map<unsigned short, struct Client> id_client_map;
 typedef std::pair<unsigned short, struct Client> id_client_pair;
@@ -49,6 +44,7 @@ class Server {
 	static Socket socket;
 	
 	static int running;
+	static HeightMap heightmap;
 
 	static class Listen : public NetTaskThread {
 		void handle_current_packet(struct sockaddr_in *from);
