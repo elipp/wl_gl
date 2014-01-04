@@ -122,6 +122,7 @@ void draw_connected_clients() {
 		const Car &car =  iter.second.car;
 
 		vec4 car_pos = car.position();
+//		PRINT("y: %f\n", car_pos(V::y));
 
 		mat4 modelview = View * mat4::translate(car_pos + vec4(0.0, -0.8, 0.0, 0.0)) * mat4::rotate(-car.state.direction, 0.0, 1.0, 0.0);
 		mat4 mv = modelview*mat4::rotate(car.state.susp_angle_roll, 1.0, 0.0, 0.0);

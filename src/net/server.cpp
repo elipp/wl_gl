@@ -332,6 +332,7 @@ void Server::broadcast_shutdown_message() {
 	PRINT("\nServer: broadcasting S_SHUTDOWN to all clients.\n");
 	send_data_to_all(sbuffer, PTCL_HEADER_LENGTH);
 }
+
 void Server::Ping::ping_client(struct Client &c) {
 	//PRINT( "Sending S_PING to client %d. (seq = %d)\n", c.info.id, c.seq_number);
 	// THIS IS ASSUMING THE PROTOCOL HEADER HAS BEEN PROPERLY SETUP.
@@ -442,11 +443,12 @@ void Server::GameState::calculate_state_client(struct Client &c) {
 	car_prev_velocity = 0.5*(car.state.velocity+car_prev_velocity);
 	car_acceleration = 0.2*(car.state.velocity - car_prev_velocity) + 0.8*car_acceleration;
 
-
 	car.state.wheel_rot -= 1.07*car.state.velocity * POSITION_UPDATE_DT_COEFF;
 	car.data_internal.susp_angle_fwd = 7*car_acceleration;
 	car.state.pos[0] += car.state.velocity*sin(car.state.direction-M_PI/2) * POSITION_UPDATE_DT_COEFF;
 	car.state.pos[2] += car.state.velocity*cos(car.state.direction-M_PI/2) * POSITION_UPDATE_DT_COEFF;
+
+	car.state.pos[1] = heightmap.lookup(car.state.pos[0], car.state.pos[2]);
 }
 
 void Server::increment_client_seq_number(struct Client &c) {

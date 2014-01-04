@@ -75,16 +75,16 @@ float HeightMap::lookup(float x, float y) {
 	yf_r = 1.0 - yf;
 	
 	// this is a simple scalar implementation
-/*	float z11 = get_pixel(xi, yi);
+	float z11 = get_pixel(xi, yi);
 	float z21 = get_pixel(xi+1, yi);
 	float z12 = get_pixel(xi, yi+1);
 	float z22 = get_pixel(xi+1, yi+1);
 
 	float R1 = xf_r * z11 + xf * z21;
 	float R2 = xf_r * z12 + xf * z22;
-	float r = (yf_r * R1 + yf * R2)/255.0; */
+	float r = (yf_r * R1 + yf * R2)/255.0; 
 	
-	vec4 z = _mm_setr_ps(get_pixel(xi, yi), 
+/*	vec4 z = _mm_setr_ps(get_pixel(xi, yi), 
 				   get_pixel(xi+1, yi), 
 				   get_pixel(xi, yi+1), 
 				   get_pixel(xi+1, yi+1));
@@ -95,7 +95,10 @@ float HeightMap::lookup(float x, float y) {
 			   	xf * yf);
 
 	float r = dot4(z, w)/255.0;
+
+	*/
 	return min_elevation_real_y + r * elevation_real_diff;
+//	return min_elevation_real_y + (get_pixel(xi, yi))*elevation_real_diff;
 }
 
 
