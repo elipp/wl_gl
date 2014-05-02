@@ -53,9 +53,10 @@ HeightMap::HeightMap(const std::string &filename, float param_scale, float param
 }
 
 inline float HeightMap::get_pixel(int x, int y) {
-		int index_x = dim_per_scale*LIMIT_VALUE_BETWEEN((double)(x+half_real_map_dim), (double)0, (double)real_map_dim_minus_one);
-		int index_y = dim_per_scale*LIMIT_VALUE_BETWEEN((double)(y+half_real_map_dim), (double)0, (double)real_map_dim_minus_one);	
-		return pixels[index_x + (dim_minus_one - index_y)*img_dim_pixels];
+		int index_x = dim_per_scale*CLAMP((double)(x+half_real_map_dim), (double)0, (double)real_map_dim_minus_one);
+		int index_y = dim_per_scale*CLAMP((double)(y+half_real_map_dim), (double)0, (double)real_map_dim_minus_one);	
+		index_y = dim_minus_one - index_y;
+		return pixels[index_x + (index_y*img_dim_pixels)];
 }
 
 float HeightMap::lookup(float x, float y) {
@@ -74,7 +75,7 @@ float HeightMap::lookup(float x, float y) {
 	yf = y - yi;
 	yf_r = 1.0 - yf;
 	
-	// this is a simple scalar implementation
+/*	// this is a simple scalar implementation
 	float z11 = get_pixel(xi, yi);
 	float z21 = get_pixel(xi+1, yi);
 	float z12 = get_pixel(xi, yi+1);
@@ -82,9 +83,9 @@ float HeightMap::lookup(float x, float y) {
 
 	float R1 = xf_r * z11 + xf * z21;
 	float R2 = xf_r * z12 + xf * z22;
-	float r = (yf_r * R1 + yf * R2)/255.0; 
+	float r = (yf_r * R1 + yf * R2)/255.0;  */
 	
-/*	vec4 z = _mm_setr_ps(get_pixel(xi, yi), 
+	vec4 z = _mm_setr_ps(get_pixel(xi, yi), 
 				   get_pixel(xi+1, yi), 
 				   get_pixel(xi, yi+1), 
 				   get_pixel(xi+1, yi+1));
@@ -96,7 +97,7 @@ float HeightMap::lookup(float x, float y) {
 
 	float r = dot4(z, w)/255.0;
 
-	*/
+	
 	return min_elevation_real_y + r * elevation_real_diff;
 //	return min_elevation_real_y + (get_pixel(xi, yi))*elevation_real_diff;
 }

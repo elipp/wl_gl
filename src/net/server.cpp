@@ -448,7 +448,7 @@ void Server::GameState::calculate_state_client(struct Client &c) {
 	car.state.pos[0] += car.state.velocity*sin(car.state.direction-M_PI/2) * POSITION_UPDATE_DT_COEFF;
 	car.state.pos[2] += car.state.velocity*cos(car.state.direction-M_PI/2) * POSITION_UPDATE_DT_COEFF;
 
-	car.state.pos[1] = heightmap.lookup(car.state.pos[0], car.state.pos[2]);
+	car.state.pos[1] = heightmap.lookup(car.state.pos[0], car.state.pos[2]) + 2.0;
 }
 
 void Server::increment_client_seq_number(struct Client &c) {

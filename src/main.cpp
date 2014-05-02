@@ -29,7 +29,7 @@ mat4 View;
 
 Quaternion viewq;
 
-int WINDOW_WIDTH = 800, WINDOW_HEIGHT = 600;
+int WINDOW_WIDTH = 1680, WINDOW_HEIGHT = 1050;
 
 GLuint grass_texId;
 
@@ -228,7 +228,7 @@ void redraw(void *data, struct wl_callback *callback, uint32_t time) {
 
 	glDisable(GL_BLEND);
 
-	terrain_mesh->use_modelview(View*mat4::scale(50, 50, 50));
+	terrain_mesh->use_modelview(View*mat4::scale(32, 32, 32));
 	terrain_mesh->render();
 
 	if (LocalClient::is_connected()) {

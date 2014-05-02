@@ -148,6 +148,8 @@ int LocalClient::handshake() {
 
 	client.info.name = preferred_name;
 
+	PRINT("name = %s\n", client.info.name.c_str());
+
 	protocol_copy_header(handshake_buffer, &HANDSHAKE_HEADER);
 	copy_to_ext_buffer(handshake_buffer, client.info.name.c_str(), client.info.name.length(), PTCL_HEADER_LENGTH);
 

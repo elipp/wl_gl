@@ -39,8 +39,10 @@ std::string get_login_username() {
 
 	#elif __linux__
 	char name_buf[L_cuserid];
-	getlogin_r(name_buf, L_cuserid);
-
+	int r = getlogin_r(name_buf, L_cuserid);
+	if (r != 0) {
+		sprintf(name_buf, "Player");
+	}
 	#endif
 
 	return std::string(name_buf);

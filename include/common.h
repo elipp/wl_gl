@@ -32,7 +32,7 @@
 #define PI_PER_180 (M_PI/180.0)
 #define D180_PER_PI (180.0/M_PI);
 
-#define LIMIT_VALUE_BETWEEN(val, lower_limit, upper_limit) MAX((lower_limit), MIN((val), (upper_limit)))
+#define CLAMP(val, lower_limit, upper_limit) MAX((lower_limit), MIN((val), (upper_limit)))
 
 inline float RADIANS(float angle_in_degrees) { return angle_in_degrees*PI_PER_180; }
 inline float DEGREES(float angle_in_radians) { return angle_in_radians*D180_PER_PI; }

@@ -153,6 +153,8 @@ static int loadPNG(const std::string &filename, unsigned char **out_buffer, img_
 	img_info.bpp = png_get_bit_depth(png_ptr, info_ptr);
 	img_info.num_channels = png_get_channels(png_ptr, info_ptr);
 
+	fprintf(stderr, "[loadPNG]: img_info: W x H = %d x %d, bpp = %d, num_ch = %d\n", img_info.width, img_info.height, img_info.bpp, img_info.num_channels);
+
 	long total_bytes = img_info.height * bytes_per_row;
 
 	//int color_type = png_get_color_type(png_ptr, info_ptr);
@@ -160,14 +162,14 @@ static int loadPNG(const std::string &filename, unsigned char **out_buffer, img_
 	//        int number_of_passes = png_set_interlace_handling(png_ptr);
 	png_read_update_info(png_ptr, info_ptr);
 
-	png_byte *pixel_buffer = (png_byte*)malloc(sizeof(png_byte)*(total_bytes));
+	png_byte *pixel_buffer = (png_byte*) malloc(sizeof(png_byte)*total_bytes); // make g++ happy
 	*out_buffer = pixel_buffer; 
 
 	if (setjmp(png_jmpbuf(png_ptr)))
 		fprintf(stderr, "[loadPNG] png_jmpbuf failed!");
 
 	if (!pixel_buffer) { 
-		fprintf(stderr, "[loagPNG] main buffer malloc failed!\n"); 
+		fprintf(stderr, "[loadPNG] main buffer malloc failed!\n"); 
 		png_destroy_read_struct(&png_ptr, &info_ptr, (png_infopp) NULL);
 		fclose(fp);
 		return 0; 
@@ -176,7 +178,8 @@ static int loadPNG(const std::string &filename, unsigned char **out_buffer, img_
 	png_byte **row_pointers = (png_byte**)malloc(sizeof(png_byte*) * img_info.height);
 
 	// assign row pointers individually as offsets into the contiguous opengl-compatible uchar buffer
-	for (int i = 0; i < img_info.height; ++i) row_pointers[(img_info.height-1)-i] = pixel_buffer + i*bytes_per_row;        
+	for (int i = 0; i < img_info.height; ++i) 
+		row_pointers[(img_info.height-1)-i] = pixel_buffer + i*bytes_per_row;        
 
 	png_read_image(png_ptr, row_pointers);
 
